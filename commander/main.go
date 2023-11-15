@@ -73,4 +73,6 @@ func Boot() error {
 	_log.Info().Msg("💽 https://github.com/oklookat/synchro")
 	_log.Info().Msg("💵 https://donationalerts.com/r/oklookat")
 	_log.Info().Msg("💵 https://boosty.to/oklookat/donate")
+
+	return nil
 }
