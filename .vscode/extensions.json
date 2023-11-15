@@ -1,0 +1,7 @@
+{
+	"recommendations": [
+		"golang.go",
+		"EditorConfig.EditorConfig",
+		"adpyke.vscode-sql-formatter"
+	]
+}
