@@ -35,10 +35,10 @@ var (
 	_dbPath     = path.Join(_dataDir, "data.sqlite")
 )
 
-func Boot() {
+func Boot() error {
 	// Data dir.
 	if err := os.MkdirAll(_dataDir, 0644); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Config.
@@ -47,12 +47,12 @@ func Boot() {
 	config.Add(deezer.Config{})
 	config.Add(linker.Config{})
 	if err := config.Boot(_configPath); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Logger.
 	if err := os.MkdirAll(_logPath, 0644); err != nil {
-		panic(err)
+		return err
 	}
 	loggerCfg := &logger.Config{}
 	if err := config.Get(logger.ConfigKey, loggerCfg); err != nil {
@@ -62,7 +62,7 @@ func Boot() {
 
 	// Repository.
 	if err := repository.Boot(_dbPath, _log.With().Str("package", "repository").Logger(), _remotes); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Core.
