@@ -12,13 +12,12 @@ require (
 	github.com/oklookat/goym v0.5.2
 	github.com/oklookat/gozvuk v0.0.6
 	github.com/oklookat/vkmauth v0.0.2
-	github.com/oklookat/yandexauth v1.0.0
+	github.com/oklookat/yandexauth/v2 v2.0.0
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/viper v1.17.0
 	github.com/vitali-fedulov/images4 v1.2.2
 	github.com/zmb3/spotify/v2 v2.4.0
 	golang.org/x/oauth2 v0.14.0
-	golang.org/x/text v0.14.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -48,6 +47,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect

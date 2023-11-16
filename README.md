@@ -20,6 +20,7 @@ Music streaming services utilities. Not ready for release yet.
 - [x] Transfer liked albums.
 - [x] Transfer liked artists.
 - [x] Transfer liked tracks.
+- [x] Transfer user playlists.
 
 ## Snapshots
 

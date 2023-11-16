@@ -42,7 +42,7 @@ func Boot(configPath string) error {
 
 	err := viper.ReadInConfig()
 	if err == nil {
-		return err
+		return viper.WriteConfig()
 	}
 
 	if errors.Is(err, os.ErrNotExist) {

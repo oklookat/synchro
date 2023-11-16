@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/oklookat/govkm"
-	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/streaming"
 	"github.com/oklookat/vkmauth"
 
@@ -21,7 +20,7 @@ var (
 
 func NewAccount(
 	ctx context.Context,
-	alias *string,
+	alias string,
 	phone string,
 	password string,
 	onCodeWaiting func(by vkmauth.CodeSended) (vkmauth.GotCode, error),
@@ -32,17 +31,12 @@ func NewAccount(
 		return nil, err
 	}
 
-	if alias == nil || len(*alias) == 0 {
-		randWord := shared.GenerateWord()
-		alias = &randWord
-	}
-
 	tokenBytes, err := json.Marshal(token)
 	if err != nil {
 		return nil, err
 	}
 
-	account, err := _repo.CreateAccount(*alias, string(tokenBytes))
+	account, err := _repo.CreateAccount(alias, string(tokenBytes))
 	if err != nil {
 		return nil, err
 	}

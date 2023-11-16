@@ -12,12 +12,7 @@ import (
 	"github.com/oklookat/synchro/streaming"
 )
 
-func NewAccount(ctx context.Context, alias *string, token string) (streaming.Account, error) {
-	if alias == nil || len(*alias) == 0 {
-		al := shared.GenerateWord()
-		alias = &al
-	}
-
+func NewAccount(ctx context.Context, alias string, token string) (streaming.Account, error) {
 	token = strings.TrimSpace(token)
 	tok := newToken(token)
 	auth, err := shared.TokenToAuth(tok)
@@ -25,7 +20,7 @@ func NewAccount(ctx context.Context, alias *string, token string) (streaming.Acc
 		return nil, err
 	}
 
-	account, err := _repo.CreateAccount(*alias, auth)
+	account, err := _repo.CreateAccount(alias, auth)
 	if err != nil {
 		return nil, err
 	}

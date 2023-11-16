@@ -55,6 +55,9 @@ func (e Service) Name() streaming.ServiceName {
 }
 
 func (e *Service) CreateAccount(alias string, auth string) (streaming.Account, error) {
+	if len(alias) == 0 {
+		alias = shared.GenerateWord(8)
+	}
 	const query = "INSERT INTO account (service_name, alias, auth, added_at) VALUES (?, ?, ?, ?) RETURNING *"
 	return dbGetOne[Account](context.Background(), query, e.Name(), alias, auth, shared.TimestampNow())
 }

@@ -46,6 +46,7 @@ func Boot() error {
 	config.Add(spotify.Config{})
 	config.Add(deezer.Config{})
 	config.Add(linker.Config{})
+	config.Add(yandexmusic.Config{})
 	if err := config.Boot(_configPath); err != nil {
 		return err
 	}

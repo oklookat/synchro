@@ -10,7 +10,6 @@ import (
 
 	"github.com/oklookat/synchro/config"
 	"github.com/oklookat/synchro/logger"
-	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/streaming"
 	"github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
@@ -26,8 +25,9 @@ var (
 	_market = spotify.Market("AU")
 )
 
-func NewAccount(ctx context.Context,
-	alias *string,
+func NewAccount(
+	ctx context.Context,
+	alias string,
 	clientID string,
 	clientSecret string,
 	onURL func(url string)) (streaming.Account, error) {
@@ -37,12 +37,7 @@ func NewAccount(ctx context.Context,
 		return nil, err
 	}
 
-	if alias == nil || len(*alias) == 0 {
-		randWord := shared.GenerateWord()
-		alias = &randWord
-	}
-
-	account, err := _repo.CreateAccount(*alias, tokens)
+	account, err := _repo.CreateAccount(alias, tokens)
 	if err != nil {
 		return nil, err
 	}

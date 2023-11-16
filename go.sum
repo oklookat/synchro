@@ -180,8 +180,8 @@ github.com/oklookat/vantuz v1.0.7 h1:udGvyqmRqWrLpVX9i7x6imG/HeUETQsGkV7AS+DW+4g
 github.com/oklookat/vantuz v1.0.7/go.mod h1:UbqJaFEYBFG0k/3HQYBGpxRz5G5WWXkCPCupstTHk1w=
 github.com/oklookat/vkmauth v0.0.2 h1:Sgo4iltw1YkyFWv/U2HqpmUmlvelmAecl9N87i/X5hA=
 github.com/oklookat/vkmauth v0.0.2/go.mod h1:svSeMmmUBXbYBJyhez1p83eaNWyuPnV12s3bosFArnw=
-github.com/oklookat/yandexauth v1.0.0 h1:/FUZEAK7YAsgozzeYAKcDa2/lrJFGvaOI+/Pto79M9Q=
-github.com/oklookat/yandexauth v1.0.0/go.mod h1:BYaW6QO44C1gy/RQFawCpoOG4fP9gJe8zC0QLfOwxMk=
+github.com/oklookat/yandexauth/v2 v2.0.0 h1:aWrdUOMwGMjeRga1XLkEDvdm1oRbAhR0H9bleBfDtPQ=
+github.com/oklookat/yandexauth/v2 v2.0.0/go.mod h1:iSSHQlF1uZWuMGNpWVQ0pnxSYDIqd6WGlDHsiGgaVaQ=
 github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
 github.com/pelletier/go-toml/v2 v2.1.0 h1:FnwAJ4oYMvbT/34k9zzHuZNrhlz48GB3/s6at6/MHO4=
 github.com/pelletier/go-toml/v2 v2.1.0/go.mod h1:tJU2Z3ZkXwnxa4DPO899bsyIoywizdUvyaeZurnPPDc=

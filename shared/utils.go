@@ -18,8 +18,6 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/vitali-fedulov/images4"
 	"golang.org/x/oauth2"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 // Compare albums, tracks, artists names.
@@ -308,22 +306,14 @@ func NormalizeStringSliceSearchablePart(slice []string) []string {
 // Generate random word.
 //
 // Example: "Wobuxahe".
-func GenerateWord() string {
+func GenerateWord(length int) string {
+	const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	theRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	vowels := []rune{'a', 'e', 'i', 'o', 'u'}
-	consonants := []rune{'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'x', 'y', 'z'}
-	word := make([]rune, theRand.Intn(7)+2)
-	for j := range word {
-		if j%2 == 0 {
-			word[j] = consonants[theRand.Intn(len(consonants))]
-		} else {
-			word[j] = vowels[theRand.Intn(len(vowels))]
-		}
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[theRand.Intn(len(letterBytes))]
 	}
-	// First char to upper.
-	caser := cases.Title(language.English)
-	titleStr := caser.String(string(word))
-	return titleStr
+	return string(b)
 }
 
 // Unix nano.
