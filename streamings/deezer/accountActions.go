@@ -269,7 +269,6 @@ const (
 	_entityTypeAlbum entityType = iota
 	_entityTypeArtist
 	_entityTypeTrack
-	_entityTypePlaylist
 )
 
 func addRemove(
@@ -323,11 +322,6 @@ func addRemove(
 			return addStatic(cl.AddTracks)
 		}
 		return remStatic(cl.RemoveTrack)
-	case _entityTypePlaylist:
-		if add {
-			return addStatic(cl.LikePlaylists)
-		}
-		return remStatic(cl.UnlikePlaylist)
 	}
 
 	return nil

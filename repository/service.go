@@ -2,22 +2,21 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/streaming"
 )
 
-func RemoteByName(name streaming.ServiceName) (streaming.Service, error) {
-	parent, ok := Remotes[name]
+func ServiceByName(name streaming.ServiceName) (streaming.Service, error) {
+	parent, ok := Services[name]
 	if !ok {
-		return nil, errors.New("not found service")
+		return nil, shared.NewErrServiceNotFound(name)
 	}
 	return parent, nil
 }
 
-func newOrExistingRemote(rem streaming.Service) (*Service, error) {
+func newOrExistingServiceDatabase(rem streaming.Service) (*Service, error) {
 	const query = "SELECT * FROM service WHERE name=? LIMIT 1"
 	service, err := dbGetOne[Service](context.Background(), query, rem.Name())
 	if err != nil {

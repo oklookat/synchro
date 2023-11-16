@@ -22,17 +22,17 @@ const (
 )
 
 var (
-	_log     *logger.Logger
-	_remotes = map[streaming.ServiceName]streaming.Service{
+	_log        *logger.Logger
+	_configPath = path.Join(_dataDir, "config.yml")
+	_logsDir    = path.Join(_dataDir, "logs")
+	_dbPath     = path.Join(_dataDir, "data.sqlite")
+	_services   = map[streaming.ServiceName]streaming.Service{
 		yandexmusic.ServiceName: &yandexmusic.Service{},
 		spotify.ServiceName:     &spotify.Service{},
 		zvuk.ServiceName:        &zvuk.Service{},
 		vkmusic.ServiceName:     &vkmusic.Service{},
 		deezer.ServiceName:      &deezer.Service{},
 	}
-	_configPath = path.Join(_dataDir, "config.yml")
-	_logPath    = path.Join(_dataDir, "log")
-	_dbPath     = path.Join(_dataDir, "data.sqlite")
 )
 
 func Boot() error {
@@ -51,23 +51,23 @@ func Boot() error {
 	}
 
 	// Logger.
-	if err := os.MkdirAll(_logPath, 0644); err != nil {
-		return err
-	}
 	loggerCfg := &logger.Config{}
-	if err := config.Get(logger.ConfigKey, loggerCfg); err != nil {
+	if err := config.Get(loggerCfg.Key(), loggerCfg); err != nil {
 		panic(err)
 	}
-	_log = logger.Boot(_logPath, *loggerCfg)
+	var err error
+	if _log, err = logger.Boot(_logsDir, *loggerCfg); err != nil {
+		panic(err)
+	}
 
 	// Repository.
-	if err := repository.Boot(_dbPath, _log.With().Str("package", "repository").Logger(), _remotes); err != nil {
+	if err := repository.Boot(_dbPath, _log, _services); err != nil {
 		return err
 	}
 
 	// Core.
-	linker.Boot()
-	linkerimpl.Boot(_remotes)
+	linker.Boot(_log)
+	linkerimpl.Boot(_services)
 
 	_log.Info().Msg("✨ Welcome to synchro!")
 	_log.Info().Msg("💽 https://github.com/oklookat/synchro")

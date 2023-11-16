@@ -35,32 +35,37 @@ func Add(cfg Configer) {
 }
 
 func Boot(configPath string) error {
+	viper.SetConfigFile(configPath)
 	for _, cfg := range _configs {
 		viper.SetDefault(cfg.Key().String(), cfg.Default())
 	}
 
-	viper.SetConfigFile(configPath)
+	err := viper.ReadInConfig()
+	if err == nil {
+		return err
+	}
 
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			f, err := os.Create(configPath)
-			if err != nil {
-				return err
-			}
-			f.Close()
-			if err = viper.SafeWriteConfig(); err != nil {
-				return err
-			}
-			return errors.New("Config file created. You must set you own config values. Config path: " + configPath)
-		} else {
+	if errors.Is(err, os.ErrNotExist) {
+		f, err := os.Create(configPath)
+		if err != nil {
+			return err
+		}
+		f.Close()
+		if err = viper.WriteConfig(); err != nil {
 			return err
 		}
 	}
 
-	return nil
+	return viper.ReadInConfig()
 }
 
 // Get config by key.
 func Get(key Key, toPtr any) error {
 	return viper.UnmarshalKey(key.String(), toPtr)
+}
+
+// Set config.
+func Set(key Key, src any) error {
+	viper.Set(key.String(), src)
+	return viper.WriteConfig()
 }

@@ -3,6 +3,7 @@ package logger
 import (
 	"io"
 	"os"
+	"path"
 
 	"github.com/oklookat/synchro/config"
 	"github.com/rs/zerolog"
@@ -11,25 +12,25 @@ import (
 
 const ConfigKey config.Key = "logger"
 
-// Configuration for logging
+// Configuration for logging.
 type Config struct {
-	// Enable console logging
-	ConsoleLoggingEnabled bool
+	// Enable console logging.
+	Console bool
 
-	// EncodeLogsAsJson makes the log framework log JSON
-	EncodeLogsAsJson bool
+	// Makes the log framework log JSON.
+	AsJson bool
 
-	// FileLoggingEnabled makes the framework log to a file
+	// Log to a file.
 	// the fields below can be skipped if this value is false!
-	FileLoggingEnabled bool
+	File bool
 
-	// MaxSize the max size in MB of the logfile before it's rolled
+	// MaxSize the max size in MB of the logfile before it's rolled.
 	MaxSize int
 
-	// MaxBackups the max number of rolled files to keep
+	// MaxBackups the max number of rolled files to keep.
 	MaxBackups int
 
-	// MaxAge the max age in days to keep a logfile
+	// MaxAge the max age in days to keep a logfile.
 	MaxAge int
 
 	// Logging level.
@@ -42,13 +43,13 @@ func (c Config) Key() config.Key {
 
 func (c Config) Default() any {
 	return Config{
-		ConsoleLoggingEnabled: true,
-		EncodeLogsAsJson:      false,
-		FileLoggingEnabled:    true,
-		MaxSize:               5,
-		MaxBackups:            5,
-		MaxAge:                5,
-		Level:                 int8(zerolog.TraceLevel),
+		Console:    true,
+		AsJson:     false,
+		File:       true,
+		MaxSize:    5,
+		MaxBackups: 5,
+		MaxAge:     5,
+		Level:      int8(zerolog.TraceLevel),
 	}
 }
 
@@ -56,22 +57,18 @@ type Logger struct {
 	*zerolog.Logger
 }
 
-// Configure sets up the logging framework
-//
-// In production, the container logs will be collected and file logging should be disabled. However,
-// during development it's nicer to see logs as text and optionally write to a file when debugging
-// problems in the containerized pipeline
-//
-// The output log file will be located at /var/log/service-xyz/service-xyz.log and
-// will be rolled according to configuration set.
-func Boot(logsDir string, config Config) *Logger {
+func Boot(logsDir string, config Config) (*Logger, error) {
 	var writers []io.Writer
 
-	if config.ConsoleLoggingEnabled {
+	if config.Console {
 		writers = append(writers, zerolog.ConsoleWriter{Out: os.Stderr})
 	}
-	if config.FileLoggingEnabled {
-		writers = append(writers, newRollingFile(logsDir, config))
+	if config.File {
+		rf, err := newRollingFile(logsDir, config)
+		if err != nil {
+			return nil, err
+		}
+		writers = append(writers, rf)
 	}
 	mw := io.MultiWriter(writers...)
 
@@ -80,14 +77,18 @@ func Boot(logsDir string, config Config) *Logger {
 
 	return &Logger{
 		Logger: &logger,
-	}
+	}, nil
 }
 
-func newRollingFile(logsDir string, config Config) io.Writer {
+func newRollingFile(logsDir string, config Config) (io.Writer, error) {
+	if err := os.MkdirAll(logsDir, 0744); err != nil {
+		return nil, err
+	}
+
 	return &lumberjack.Logger{
-		Filename:   logsDir,
+		Filename:   path.Join(logsDir, "log.log"),
 		MaxBackups: config.MaxBackups, // files
 		MaxSize:    config.MaxSize,    // megabytes
 		MaxAge:     config.MaxAge,     // days
-	}
+	}, nil
 }

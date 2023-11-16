@@ -33,7 +33,7 @@ func (e ArtistsRemote) Name() streaming.ServiceName {
 	return e.repo.Name()
 }
 
-func (e ArtistsRemote) RemoteEntity(ctx context.Context, id streaming.ServiceEntityID) (linker.RemoteEntity, error) {
+func (e ArtistsRemote) StreamingServiceEntity(ctx context.Context, id streaming.ServiceEntityID) (linker.StreamingServiceEntity, error) {
 	actions, err := e.repo.Actions()
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (e ArtistsRemote) Linkables() linker.Linkables {
 	return repository.NewLinkableEntityArtist(real)
 }
 
-func (e ArtistsRemote) Match(ctx context.Context, target linker.RemoteEntity) (linker.RemoteEntity, error) {
+func (e ArtistsRemote) Match(ctx context.Context, target linker.StreamingServiceEntity) (linker.StreamingServiceEntity, error) {
 	realTarget, ok := target.(streaming.ServiceArtist)
 	if !ok {
 		return nil, errors.New("realTarget, ok := target.(streaming.ServiceArtist)")

@@ -6,7 +6,6 @@ type (
 	// Actions for service account.
 	//
 	// Only ErrNotImplemented can be returned as an error.
-	// But you must implement at least LikedArtists().
 	AccountActions interface {
 		LikedAlbums() LikedActions
 		LikedArtists() LikedActions

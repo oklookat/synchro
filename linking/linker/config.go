@@ -13,6 +13,6 @@ func (c Config) Key() config.Key {
 
 func (c Config) Default() any {
 	return Config{
-		RecheckMissing: true,
+		RecheckMissing: false,
 	}
 }

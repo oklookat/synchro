@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
@@ -68,17 +67,17 @@ func (e Account) Delete() error {
 }
 
 func (e Account) Database() (streaming.Database, error) {
-	rem, ok := Remotes[e.HRemoteName]
-	if !ok {
-		return nil, errors.New("service not found")
+	srv, err := ServiceByName(e.HRemoteName)
+	if err != nil {
+		return nil, err
 	}
-	return rem.Database(), nil
+	return srv.Database(), nil
 }
 
 func (e *Account) Actions() (streaming.AccountActions, error) {
-	rem, ok := Remotes[e.HRemoteName]
-	if !ok {
-		return nil, errors.New("service not found")
+	srv, err := ServiceByName(e.HRemoteName)
+	if err != nil {
+		return nil, err
 	}
-	return rem.AssignAccountActions(e)
+	return srv.AssignAccountActions(e)
 }

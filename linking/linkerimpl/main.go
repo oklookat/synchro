@@ -19,8 +19,8 @@ func Boot(services map[streaming.ServiceName]streaming.Service) {
 	_remotes = services
 }
 
-func NewRemoteEntity(from streaming.ServiceEntity) linker.RemoteEntity {
-	return from.(linker.RemoteEntity)
+func NewRemoteEntity(from streaming.ServiceEntity) linker.StreamingServiceEntity {
+	return from.(linker.StreamingServiceEntity)
 }
 
 // Get services that ready to working with linker

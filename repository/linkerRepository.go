@@ -104,8 +104,7 @@ func (e LinkableEntity) LinkedRemoteID(id streaming.ServiceEntityID) (linker.Lin
 
 // Linked.
 type LinkedEntity struct {
-	HID uint64 `db:"id"`
-	// TODO change linked fields in db to entity_id
+	HID         uint64                     `db:"id"`
 	HEntityID   uint64                     `db:"entity_id"`
 	HRemoteName streaming.ServiceName      `db:"service_name"`
 	IdOnRemote  *streaming.ServiceEntityID `db:"id_on_service"`
@@ -118,11 +117,11 @@ func (e LinkedEntity) EntityID() streaming.DatabaseEntityID {
 	return streaming.DatabaseEntityID(e.HEntityID)
 }
 
-func (e LinkedEntity) RemoteID() *streaming.ServiceEntityID {
+func (e LinkedEntity) ServiceEntityID() *streaming.ServiceEntityID {
 	return e.IdOnRemote
 }
 
-func (e *LinkedEntity) SetRemoteID(id *streaming.ServiceEntityID) error {
+func (e *LinkedEntity) SetServiceEntityID(id *streaming.ServiceEntityID) error {
 	var copied *streaming.ServiceEntityID
 	if id != nil {
 		cp := *id

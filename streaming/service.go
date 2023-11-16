@@ -28,24 +28,6 @@ func (r ServiceEntityID) String() string {
 	return string(r)
 }
 
-type ServiceEntityType string
-
-func (e ServiceEntityType) String() string {
-	return string(e)
-}
-
-func (e *ServiceEntityType) FromString(val string) {
-	conv := ServiceEntityType(val)
-	*e = conv
-}
-
-const (
-	ServiceEntityTypeAlbum    ServiceEntityType = "album"
-	ServiceEntityTypeArtist   ServiceEntityType = "artist"
-	ServiceEntityTypeTrack    ServiceEntityType = "track"
-	ServiceEntityTypePlaylist ServiceEntityType = "playlist"
-)
-
 type (
 	// Example: Spotify.
 	Service interface {

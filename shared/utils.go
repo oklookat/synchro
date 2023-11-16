@@ -1,9 +1,7 @@
 package shared
 
 import (
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -328,11 +326,6 @@ func GenerateWord() string {
 	return titleStr
 }
 
-// Context canceled or deadline exceeded?
-func IsContextError(err error) bool {
-	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
-}
-
 // Unix nano.
 func TimestampNanoNow() int64 {
 	return time.Now().UnixNano()
@@ -363,11 +356,6 @@ func Time(timestamp int64) time.Time {
 	return time.Unix(timestamp, 0)
 }
 
-// Current time to readable string.
-func TimeNowStr() string {
-	return time.Now().Format("15:04:05 02.01.06")
-}
-
 func TokenToAuth(tok *oauth2.Token) (string, error) {
 	tokenBytes, err := json.Marshal(tok)
 	if err != nil {
@@ -383,11 +371,4 @@ func AuthToToken(auth string) (*oauth2.Token, error) {
 		return nil, err
 	}
 	return tok, err
-}
-
-func IsValidPort(val int) error {
-	if val < 1024 || val > 65535 {
-		return errors.New("port min: 1024, max: 65535")
-	}
-	return nil
 }

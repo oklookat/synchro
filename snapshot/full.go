@@ -77,7 +77,7 @@ func (f Full) Recover(ctx context.Context, setts RecoverSettings) error {
 // Convert snapshot to snapshot in another streaming.
 func (f Full) CrossShot(ctx context.Context, origin streaming.Service, target streaming.Service) (*Full, error) {
 	if origin.Name() == target.Name() {
-		return nil, errors.New("origin and target have same name")
+		return nil, errors.New("same origin and target")
 	}
 
 	result := &Full{
@@ -184,7 +184,7 @@ func transferIds(
 
 	var originLinked []linker.Linked
 	for _, ent := range entities {
-		result, err := lnk.FromRemote(ctx, ent)
+		result, err := lnk.FromStreaming(ctx, ent)
 		if err != nil {
 			return nil, err
 		}
@@ -196,15 +196,15 @@ func transferIds(
 
 	var targetIds []streaming.ServiceEntityID
 	for _, link := range originLinked {
-		result, err := lnk.ToRemote(ctx, link.EntityID(), to)
+		result, err := lnk.ToStreaming(ctx, link.EntityID(), to)
 		if err != nil {
 			return nil, err
 		}
 		// Missing.
-		if shared.IsNil(result.Linked) || result.Linked.RemoteID() == nil {
+		if shared.IsNil(result.Linked) || result.Linked.ServiceEntityID() == nil {
 			continue
 		}
-		targetIds = append(targetIds, *result.Linked.RemoteID())
+		targetIds = append(targetIds, *result.Linked.ServiceEntityID())
 	}
 
 	return targetIds, nil

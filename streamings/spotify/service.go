@@ -3,9 +3,7 @@ package spotify
 import (
 	"context"
 
-	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/streaming"
-	"github.com/zmb3/spotify/v2"
 )
 
 var (
@@ -42,17 +40,9 @@ func (s Service) Actions() (streaming.ServiceActions, error) {
 		return nil, err
 	}
 
-	var client *spotify.Client
-	for i := range accounts {
-		client, err = getClient(accounts[i])
-		if err != nil {
-			continue
-		}
-		break
-	}
-
-	if client == nil {
-		return nil, shared.ErrNoRemoteActions
+	client, err := getClient(accounts[0])
+	if err != nil {
+		return nil, err
 	}
 
 	return newActions(client), nil

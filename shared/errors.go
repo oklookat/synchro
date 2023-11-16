@@ -3,11 +3,12 @@ package shared
 import (
 	"errors"
 	"fmt"
+
+	"github.com/oklookat/synchro/streaming"
 )
 
 var (
-	ErrNotImplemented  = errors.New("not implemented")
-	ErrNoRemoteActions = errors.New("service actions not available")
+	ErrNotImplemented = errors.New("not implemented")
 )
 
 type ErrAccountNotExists struct {
@@ -19,18 +20,16 @@ func (e ErrAccountNotExists) Error() string {
 	return fmt.Sprintf("%s: account not exists (id: %s)", e.Prefix, e.ID)
 }
 
-func NewErrSnapshotNotFound(prefix string, id string) ErrSnapshotNotFound {
-	return ErrSnapshotNotFound{
-		Prefix: prefix,
-		ID:     id,
+func NewErrServiceNotFound(name streaming.ServiceName) ErrServiceNotFound {
+	return ErrServiceNotFound{
+		Name: name,
 	}
 }
 
-type ErrSnapshotNotFound struct {
-	Prefix,
-	ID string
+type ErrServiceNotFound struct {
+	Name streaming.ServiceName
 }
 
-func (e ErrSnapshotNotFound) Error() string {
-	return fmt.Sprintf("%s: snapshot not exists (id: %s)", e.Prefix, e.ID)
+func (e ErrServiceNotFound) Error() string {
+	return fmt.Sprintf("service '%s' not found", e.Name)
 }
