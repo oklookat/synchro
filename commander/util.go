@@ -1,8 +1,6 @@
 package commander
 
 import (
-	"strconv"
-
 	"github.com/oklookat/synchro/repository"
 	"github.com/oklookat/synchro/shared"
 )
@@ -31,11 +29,7 @@ func stringToRemoteIDPtr(val string) *shared.RemoteID {
 }
 
 func accountByID(id string) (shared.Account, error) {
-	accID, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	account, err := repository.AccountByID(accID)
+	account, err := repository.AccountByID(shared.RepositoryID(id))
 	if err != nil {
 		return nil, err
 	}

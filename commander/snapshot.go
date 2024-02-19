@@ -65,7 +65,7 @@ func Snapshots(remoteName, filterAuto string) (*SnapshotSlice, error) {
 }
 
 func SnapshotByID(id string) (*Snapshot, error) {
-	snap, err := repository.Snap.Snapshot(id)
+	snap, err := repository.Snap.Snapshot(shared.RepositoryID(id))
 	if shared.IsNil(snap) {
 		return nil, shared.NewErrSnapshotNotFound(_packageName, id)
 	}
@@ -205,7 +205,7 @@ func CrossShot(snapshotId, targetRemoteName string) (string, error) {
 		if err != nil {
 			return err
 		}
-		snapshotID = targetSnap.ID()
+		snapshotID = targetSnap.ID().String()
 		defer func() {
 			if err != nil {
 				_ = targetSnap.Delete()
@@ -315,7 +315,7 @@ type Snapshot struct {
 }
 
 func (e Snapshot) ID() string {
-	return e.self.ID()
+	return e.self.ID().String()
 }
 
 func (e Snapshot) Auto() bool {
@@ -437,7 +437,7 @@ type SnapshotPlaylist struct {
 }
 
 func (e SnapshotPlaylist) ID() string {
-	return e.self.ID()
+	return e.self.ID().String()
 }
 
 func (e SnapshotPlaylist) Name() string {

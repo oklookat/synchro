@@ -60,12 +60,12 @@ func (e Deezer) NewAccount(alias, clientID, clientSecret string, deadlineSeconds
 		err     error
 	)
 	if err := execTask(deadlineSeconds, func(ctx context.Context) error {
-		account, err = deezer.NewAccount(ctx, &alias, clientID, clientSecret, onURL.OnURL)
+		account, err = deezer.NewAccount(ctx, alias, clientID, clientSecret, onURL.OnURL)
 		return err
 	}); err != nil {
 		return "", err
 	}
-	return account.ID(), err
+	return account.ID().String(), err
 }
 
 func (e Deezer) Reauth(accountId, clientID string, clientSecret string, deadlineSeconds int, onURL OnUrler) error {

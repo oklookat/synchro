@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	_ "embed"
+	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
@@ -11,18 +12,44 @@ import (
 	"github.com/oklookat/synchro/shared"
 )
 
-var (
-	//go:embed library.sql
-	librarySQL string
-
-	_db  *sqlx.DB
-	_log *logger.Logger
-
-	Remotes map[shared.RemoteName]shared.Remote
+const (
+	EntityNameArtist   EntityName = "artist"
+	EntityNameAlbum    EntityName = "album"
+	EntityNameTrack    EntityName = "track"
+	EntityNamePlaylist EntityName = "playlist"
 )
+
+var (
+	Remotes map[shared.RemoteName]shared.Remote
+
+	ArtistEntity   = NewEntityRepository(EntityNameArtist)
+	AlbumEntity    = NewEntityRepository(EntityNameAlbum)
+	TrackEntity    = NewEntityRepository(EntityNameTrack)
+	PlaylistEntity = NewEntityRepository(EntityNamePlaylist)
+
+	ArtistLinkable = NewEntityRepository(EntityNameArtist)
+	AlbumLinkable  = NewEntityRepository(EntityNameAlbum)
+	TrackLinkable  = NewEntityRepository(EntityNameTrack)
+
+	ArtistSyncable   = NewSyncableEntity(EntityNameArtist)
+	AlbumSyncable    = NewSyncableEntity(EntityNameAlbum)
+	TrackSyncable    = NewSyncableEntity(EntityNameTrack)
+	PlaylistSyncable = NewSyncableEntity(EntityNamePlaylist)
+)
+
+func NewLinkablePlaylist(accountID uint64) *LinkableEntity {
+	return NewLinkableEntity("playlist", shared.RemoteName(strconv.FormatUint(accountID, 10)))
+}
 
 const (
 	_packageName = "repository"
+)
+
+var (
+	//go:embed library.sql
+	_librarySQL string
+	_db         *sqlx.DB
+	_log        *logger.Logger
 )
 
 func Boot(remotes map[shared.RemoteName]shared.Remote) error {
@@ -37,11 +64,12 @@ func Boot(remotes map[shared.RemoteName]shared.Remote) error {
 		_log.Error("sqlx.Open: " + err.Error())
 		return err
 	}
-	if _, err = dbExec(context.Background(), librarySQL); err != nil {
+	if _, err = dbExec(context.Background(), _librarySQL); err != nil {
 		return err
 	}
 
 	Remotes = make(map[shared.RemoteName]shared.Remote, len(remotes))
+
 	for name := range remotes {
 		// Create / get.
 		repo, err := newOrExistingRemote(remotes[name])

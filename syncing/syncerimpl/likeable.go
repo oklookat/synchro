@@ -131,7 +131,7 @@ func (e *LikeableAccount) Start(ctx context.Context) error {
 		// (syncer / DB mistake?).
 		if _, ok := e.likes[id]; ok {
 			_log.
-				AddField("entityID", id.String()).
+				AddField("entityID", id).
 				Warn("not present, but already liked")
 			continue
 		}

@@ -217,12 +217,12 @@ func LinkerCleanTracks() error {
 }
 
 // Delete entities.
-func LinkerCleanPlaylists() error {
-	return execTask(0, func(ctx context.Context) error {
-		repo := linkerimpl.NewPlaylistsRepository()
-		return repo.DeleteAll()
-	})
-}
+// func LinkerCleanPlaylists() error {
+// 	return execTask(0, func(ctx context.Context) error {
+// 		repo := linkerimpl.NewPlaylistsRepository()
+// 		return repo.DeleteAll()
+// 	})
+// }
 
 func newLinked(from linker.Linked) *Linked {
 	return &Linked{

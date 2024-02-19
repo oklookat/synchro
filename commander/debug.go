@@ -2,7 +2,6 @@ package commander
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/oklookat/synchro/repository"
@@ -15,13 +14,13 @@ func DebugFuckup() error {
 	})
 }
 
-func DebugSetArtistMissing(artistID, remoteName string) error {
-	aID, err := strconv.ParseUint(artistID, 10, 64)
-	if err != nil {
-		return err
-	}
-	return repository.DebugSetArtistMissing(aID, shared.RemoteName(remoteName))
-}
+// func DebugSetArtistMissing(artistID, remoteName string) error {
+// 	aID, err := strconv.ParseUint(artistID, 10, 64)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return repository.DebugSetArtistMissing(aID, shared.RemoteName(remoteName))
+// }
 
 func DebugExecInfiniteTask() error {
 	return execTask(0, func(ctx context.Context) error {

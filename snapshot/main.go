@@ -35,7 +35,7 @@ type (
 			filterAuto SnapshotsFilterAuto,
 		) ([]Snapshot, error)
 
-		Snapshot(id string) (Snapshot, error)
+		Snapshot(id shared.RepositoryID) (Snapshot, error)
 
 		// Delete oldest auto snapshots in remote, if max count reached.
 		//
@@ -46,7 +46,7 @@ type (
 
 	Snapshot interface {
 		// Unique ID.
-		ID() string
+		ID() shared.RepositoryID
 
 		// Snapshot belongs to this remote.
 		RemoteName() shared.RemoteName
@@ -119,7 +119,7 @@ type (
 
 	Playlist interface {
 		// Unique repository playlist ID.
-		ID() string
+		ID() shared.RepositoryID
 
 		Name() string
 

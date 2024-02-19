@@ -9,11 +9,7 @@ import (
 )
 
 func AccountByID(id string) (*Account, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	acc, err := repository.AccountByID(uid)
+	acc, err := repository.AccountByID(shared.RepositoryID(id))
 	return newAccount(acc), err
 }
 
@@ -47,7 +43,7 @@ type Account struct {
 }
 
 func (e *Account) ID() string {
-	return e.self.ID()
+	return e.self.ID().String()
 }
 
 func (e *Account) Alias() string {

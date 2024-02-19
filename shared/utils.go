@@ -19,6 +19,7 @@ import (
 	"github.com/adrg/strutil/metrics"
 	"github.com/gosimple/slug"
 	"github.com/mozillazg/go-unidecode"
+	"github.com/oklog/ulid/v2"
 	"github.com/vitali-fedulov/images4"
 	"golang.org/x/oauth2"
 	"golang.org/x/text/cases"
@@ -401,6 +402,10 @@ func GenerateWord() string {
 	caser := cases.Title(language.English)
 	titleStr := caser.String(string(word))
 	return titleStr
+}
+
+func GenerateULID() string {
+	return ulid.Make().String()
 }
 
 // Context canceled or deadline exceeded?

@@ -22,7 +22,7 @@ func NewArtists() (*linker.Static, error) {
 		converted[name] = ArtistsRemote{repo: ready[name].Repository()}
 	}
 
-	return linker.NewStatic(repository.EntityArtist{}, converted), nil
+	return linker.NewStatic(repository.ArtistEntity, converted), nil
 }
 
 type ArtistsRemote struct {
@@ -43,12 +43,7 @@ func (e ArtistsRemote) RemoteEntity(ctx context.Context, id shared.RemoteID) (li
 }
 
 func (e ArtistsRemote) Linkables() linker.Linkables {
-	real, ok := e.repo.(*repository.Remote)
-	if !ok {
-		_log.Error("real, ok := e.repo.(*repository.Remote)")
-		return nil
-	}
-	return repository.NewLinkableArtist(real)
+	return repository.NewLinkableEntity(repository.EntityNameArtist, e.repo.Name())
 }
 
 func (e ArtistsRemote) Match(ctx context.Context, target linker.RemoteEntity) (linker.RemoteEntity, error) {

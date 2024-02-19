@@ -8,8 +8,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/oklookat/synchro/shared"
 )
+
+func genRepositoryID() shared.RepositoryID {
+	return shared.RepositoryID(ulid.Make().String())
+}
+
+func genEntityID() shared.RepositoryID {
+	return genRepositoryID()
+}
 
 func genNewerQuery(tableName string, newerThan time.Time, syncParamName string) string {
 	dated := strconv.FormatInt(shared.TimestampNano(newerThan), 10)
@@ -27,7 +36,7 @@ func getNotMatchedCountQuery(tableName string, remoteName shared.RemoteName) str
 	WHERE id_on_remote IS NULL AND remote_name=%s`, tableName, remoteName)
 }
 
-func execSnapshotGetCountQuery(tableName string, snapshotId uint64) (int, error) {
+func execSnapshotGetCountQuery(tableName string, snapshotId shared.RepositoryID) (int, error) {
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE snapshot_id = ?", tableName)
 	result, err := dbGetOneSimple[int](context.Background(), query, snapshotId)
 	if err != nil {

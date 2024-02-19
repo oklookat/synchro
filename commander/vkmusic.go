@@ -56,13 +56,13 @@ func (e VkMusic) NewAccount(
 			}
 			return got, err
 		}
-		account, err = vkmusic.NewAccount(ctx, &alias, phone, password, onCoded)
+		account, err = vkmusic.NewAccount(ctx, alias, phone, password, onCoded)
 		return err
 	}); err != nil {
 		return "", err
 	}
 
-	return account.ID(), err
+	return account.ID().String(), err
 }
 
 func (e VkMusic) Reauth(

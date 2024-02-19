@@ -2,10 +2,12 @@ package yandexmusic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 
 	"github.com/oklookat/goym"
-	"github.com/oklookat/yandexauth"
+	"github.com/oklookat/yandexauth/v2"
 	"golang.org/x/oauth2"
 
 	"github.com/oklookat/synchro/logger"
@@ -27,21 +29,32 @@ const (
 
 func NewAccount(
 	ctx context.Context,
-	alias *string,
-	login string,
+	alias string,
 	onUrlCode func(url string, code string),
 ) (shared.Account, error) {
 
-	tokens, err := getTokens(ctx, login, onUrlCode)
+	hostname, err := os.Hostname()
+	if err != nil || len(hostname) == 0 || hostname == "localhost" {
+		hostname = "synchro " + shared.GenerateWord()
+	}
+	deviceID := shared.GenerateULID()
+
+	tokens, err := getTokens(ctx, deviceID, hostname, onUrlCode)
 	if err != nil {
 		return nil, err
 	}
 
-	if alias == nil || len(*alias) == 0 {
-		alias = &login
+	var tokFinal theToken
+	tokFinal.Token = tokens
+	tokFinal.DeviceID = deviceID
+	tokFinal.Hostname = hostname
+
+	jBytes, err := json.Marshal(&tokFinal)
+	if err != nil {
+		return nil, err
 	}
 
-	account, err := _repo.CreateAccount(*alias, tokens)
+	account, err := _repo.CreateAccount(alias, string(jBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -55,35 +68,38 @@ func Reauth(
 	login string,
 	onUrlCode func(url string, code string),
 ) error {
+	var tok theToken
+	if err := json.Unmarshal([]byte(account.Auth()), &tok); err != nil {
+		return err
+	}
 
-	tokens, err := getTokens(ctx, login, onUrlCode)
-
+	tokens, err := getTokens(ctx, tok.DeviceID, tok.Hostname, onUrlCode)
 	if err != nil {
 		return err
 	}
 
-	return account.SetAuth(tokens)
-}
+	tok.Token = tokens
 
-func getTokens(ctx context.Context,
-	login string,
-	onUrlCode func(url, code string)) (string, error) {
-
-	hostname := "synchro " + shared.GenerateWord()
-	tokens, err := yandexauth.New(
-		ctx,
-		_clientID,
-		_clientSecret,
-		login,
-		hostname,
-		onUrlCode,
-	)
-
+	jBytes, err := json.Marshal(&tok)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return shared.TokenToAuth(tokens)
+	return account.SetAuth(string(jBytes))
+}
+
+func getTokens(
+	ctx context.Context,
+	deviceID, hostname string,
+	onUrlCode func(url, code string),
+) (*oauth2.Token, error) {
+	return yandexauth.New(ctx, _clientID, _clientSecret, deviceID, hostname, onUrlCode)
+}
+
+type theToken struct {
+	*oauth2.Token
+	DeviceID string `json:"deviceID"`
+	Hostname string `json:"hostname"`
 }
 
 func getClient(account shared.Account) (*goym.Client, error) {

@@ -82,14 +82,14 @@ func Sync(ctx context.Context) error {
 		}
 	}
 
-	if len(accs.Playlists) > 0 {
-		_log.
-			AddField("accountsCount", strconv.Itoa(len(accs.Playlists))).
-			Info("Syncing playlists...")
-		if err := syncPlaylists(ctx, accs.Playlists); err != nil {
-			return err
-		}
-	}
+	// if len(accs.Playlists) > 0 {
+	// 	_log.
+	// 		AddField("accountsCount", strconv.Itoa(len(accs.Playlists))).
+	// 		Info("Syncing playlists...")
+	// 	if err := syncPlaylists(ctx, accs.Playlists); err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }

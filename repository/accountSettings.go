@@ -7,7 +7,7 @@ import (
 	"github.com/oklookat/synchro/shared"
 )
 
-func newAccountSettings(accountID uint64) (*AccountSettings, error) {
+func newAccountSettings(accountID shared.RepositoryID) (*AccountSettings, error) {
 	setts := &AccountSettings{
 		HAccountID: accountID,
 	}
@@ -16,8 +16,8 @@ func newAccountSettings(accountID uint64) (*AccountSettings, error) {
 }
 
 type AccountSettings struct {
-	HID        uint64 `db:"id"`
-	HAccountID uint64 `db:"account_id"`
+	HID        shared.RepositoryID `db:"id"`
+	HAccountID shared.RepositoryID `db:"account_id"`
 
 	HSyncLikedAlbums  bool `db:"sync_liked_albums"`
 	HSyncLikedArtists bool `db:"sync_liked_artists"`
@@ -33,10 +33,10 @@ type AccountSettings struct {
 func (e *AccountSettings) load() error {
 	const (
 		selectQuery = "SELECT * FROM account_settings WHERE account_id = ? LIMIT 1"
-		insertQuery = "INSERT INTO account_settings (account_id) VALUES (?) RETURNING *"
+		insertQuery = "INSERT INTO account_settings (id, account_id) VALUES (?, ?) RETURNING *"
 	)
 
-	setts, err := dbGetOne[AccountSettings](context.Background(), selectQuery, e.HAccountID)
+	setts, err := dbGetOne[AccountSettings](context.Background(), selectQuery, genRepositoryID(), e.HAccountID)
 	if err != nil {
 		return err
 	}
@@ -137,10 +137,10 @@ func (e *AccountSettings) Playlists() shared.SynchronizationSettings {
 }
 
 func (e *AccountSettings) Playlist(playlistID shared.EntityID) (shared.PlaylistSyncSettings, error) {
-	return newAccountSyncedPlaylistSettings(uint64(playlistID), e.HAccountID)
+	return newAccountSyncedPlaylistSettings(playlistID, e.HAccountID)
 }
 
-func newAccountSyncedPlaylistSettings(playlistID, accountID uint64) (*AccountSyncedPlaylistSettings, error) {
+func newAccountSyncedPlaylistSettings(playlistID shared.EntityID, accountID shared.RepositoryID) (*AccountSyncedPlaylistSettings, error) {
 	setts := &AccountSyncedPlaylistSettings{
 		HPlaylistID: playlistID,
 		HAccountID:  accountID,
@@ -150,9 +150,9 @@ func newAccountSyncedPlaylistSettings(playlistID, accountID uint64) (*AccountSyn
 }
 
 type AccountSyncedPlaylistSettings struct {
-	HID         uint64 `db:"id"`
-	HPlaylistID uint64 `db:"playlist_id"`
-	HAccountID  uint64 `db:"account_id"`
+	HID         shared.RepositoryID `db:"id"`
+	HPlaylistID shared.EntityID     `db:"playlist_id"`
+	HAccountID  shared.RepositoryID `db:"account_id"`
 
 	HSyncName        bool `db:"sync_name"`
 	HSyncDescription bool `db:"sync_description"`

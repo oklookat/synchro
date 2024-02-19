@@ -18,20 +18,20 @@ func (e YandexMusic) RemoteName() string {
 	return yandexmusic.RemoteName.String()
 }
 
-func (e YandexMusic) NewAccount(alias, login string, deadlineSeconds int, onUrlCode OnUrlCoder) (string, error) {
+func (e YandexMusic) NewAccount(alias string, deadlineSeconds int, onUrlCode OnUrlCoder) (string, error) {
 	var (
 		account shared.Account
 		err     error
 	)
 	if err := execTask(deadlineSeconds, func(ctx context.Context) error {
-		account, err = yandexmusic.NewAccount(ctx, &alias, login, func(url, code string) {
+		account, err = yandexmusic.NewAccount(ctx, alias, func(url, code string) {
 			onUrlCode.OnUrlCode(url, code)
 		})
 		return err
 	}); err != nil {
 		return "", err
 	}
-	return account.ID(), err
+	return account.ID().String(), err
 }
 
 func (e YandexMusic) Reauth(accountId string, login string, deadlineSeconds int, onURL OnUrlCoder) error {

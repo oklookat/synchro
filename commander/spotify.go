@@ -60,12 +60,12 @@ func (e Spotify) NewAccount(alias, clientID, clientSecret string, deadlineSecond
 		err     error
 	)
 	if err := execTask(deadlineSeconds, func(ctx context.Context) error {
-		account, err = spotify.NewAccount(ctx, &alias, clientID, clientSecret, onURL.OnURL)
+		account, err = spotify.NewAccount(ctx, alias, clientID, clientSecret, onURL.OnURL)
 		return err
 	}); err != nil {
 		return "", err
 	}
-	return account.ID(), nil
+	return account.ID().String(), nil
 }
 
 func (e Spotify) Reauth(accountId, clientID string, clientSecret string, deadlineSeconds int, onURL OnUrler) error {

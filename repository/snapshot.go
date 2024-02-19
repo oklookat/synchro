@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,8 +23,8 @@ func (e Snapshotter) Create(in shared.RemoteName, alias string, auto bool) (snap
 		cfg.Default()
 	}
 
-	const query = "INSERT INTO snapshot (remote_name, alias, auto, created_at) VALUES (?, ?, ?, ?) RETURNING *;"
-	return dbGetOne[Snapshot](context.Background(), query, in, alias, auto, shared.TimestampNow())
+	const query = "INSERT INTO snapshot (id, remote_name, alias, auto, created_at) VALUES (?, ?, ?, ?, ?) RETURNING *;"
+	return dbGetOne[Snapshot](context.Background(), query, genRepositoryID(), in, alias, auto, shared.TimestampNow())
 }
 
 func (e Snapshotter) DeleteOldestAuto(in shared.RemoteName, max int) error {
@@ -74,29 +73,25 @@ func (e Snapshotter) Snapshots(
 	return dbGetManyConvert[Snapshot, snapshot.Snapshot](context.Background(), nil, query, args...)
 }
 
-func (e Snapshotter) Snapshot(id string) (snapshot.Snapshot, error) {
-	uid, err := strconv.ParseUint(id, 10, 64)
-	if err != nil {
-		return nil, err
-	}
+func (e Snapshotter) Snapshot(id shared.RepositoryID) (snapshot.Snapshot, error) {
 	const query = "SELECT * FROM snapshot WHERE id = ? LIMIT 1"
-	return dbGetOne[Snapshot](context.Background(), query, uid)
+	return dbGetOne[Snapshot](context.Background(), query, id)
 }
 
 type Snapshot struct {
-	HID                      uint64            `db:"id"`
-	HRemoteName              shared.RemoteName `db:"remote_name"`
-	HAlias                   string            `db:"alias"`
-	HAuto                    bool              `db:"auto"`
-	HRestoreableLikedAlbums  bool              `db:"restoreable_liked_albums"`
-	HRestoreableLikedArtists bool              `db:"restoreable_liked_artists"`
-	HRestoreableLikedTracks  bool              `db:"restoreable_liked_tracks"`
-	HRestoreablePlaylists    bool              `db:"restoreable_playlists"`
-	HCreatedAt               int64             `db:"created_at"`
+	HID                      shared.RepositoryID `db:"id"`
+	HRemoteName              shared.RemoteName   `db:"remote_name"`
+	HAlias                   string              `db:"alias"`
+	HAuto                    bool                `db:"auto"`
+	HRestoreableLikedAlbums  bool                `db:"restoreable_liked_albums"`
+	HRestoreableLikedArtists bool                `db:"restoreable_liked_artists"`
+	HRestoreableLikedTracks  bool                `db:"restoreable_liked_tracks"`
+	HRestoreablePlaylists    bool                `db:"restoreable_playlists"`
+	HCreatedAt               int64               `db:"created_at"`
 }
 
-func (e Snapshot) ID() string {
-	return strconv.FormatUint(e.HID, 10)
+func (e Snapshot) ID() shared.RepositoryID {
+	return e.HID
 }
 
 func (e Snapshot) RemoteName() shared.RemoteName {
@@ -244,8 +239,8 @@ func (e *Snapshot) AddPlaylist(name string,
 	description *string,
 	isVisible bool,
 	tracks []shared.RemoteID) (snapshot.Playlist, error) {
-	const query = "INSERT INTO snapshot_playlist (snapshot_id, name, is_visible, description, created_at) VALUES (?, ?, ?, ?, ?) RETURNING *"
-	snap, err := dbGetOne[SnapshotPlaylist](context.Background(), query, e.HID, name, isVisible, description, shared.TimestampNow())
+	const query = "INSERT INTO snapshot_playlist (id, snapshot_id, name, is_visible, description, created_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING *"
+	snap, err := dbGetOne[SnapshotPlaylist](context.Background(), query, genRepositoryID(), e.HID, name, isVisible, description, shared.TimestampNow())
 	if err != nil {
 		return nil, err
 	}
@@ -295,16 +290,16 @@ func (e Snapshot) Delete() error {
 }
 
 type SnapshotPlaylist struct {
-	HID          uint64  `db:"id"`
-	HSnapshotID  uint64  `db:"snapshot_id"`
-	HName        string  `db:"name"`
-	HIsVisible   bool    `db:"is_visible"`
-	HDescription *string `db:"description"`
-	HCreatedAt   int64   `db:"created_at"`
+	HID          shared.RepositoryID `db:"id"`
+	HSnapshotID  shared.RepositoryID `db:"snapshot_id"`
+	HName        string              `db:"name"`
+	HIsVisible   bool                `db:"is_visible"`
+	HDescription *string             `db:"description"`
+	HCreatedAt   int64               `db:"created_at"`
 }
 
-func (e SnapshotPlaylist) ID() string {
-	return strconv.FormatUint(e.HID, 10)
+func (e SnapshotPlaylist) ID() shared.RepositoryID {
+	return e.HID
 }
 
 func (e SnapshotPlaylist) Name() string {
@@ -353,7 +348,7 @@ func (e SnapshotPlaylist) CreatedAt() time.Time {
 	return shared.Time(e.HCreatedAt)
 }
 
-func getSnapshotLikes(ctx context.Context, tableName string, snapshotID uint64) (snapshotLikedSlice, error) {
+func getSnapshotLikes(ctx context.Context, tableName string, snapshotID shared.RepositoryID) (snapshotLikedSlice, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE snapshot_id = ?", tableName)
 	return dbGetMany[SnapshotLiked](ctx, query, nil, snapshotID)
 }
@@ -377,7 +372,7 @@ func (e snapshotLikedSlice) Ids() []shared.RemoteID {
 	return ids
 }
 
-func snapshotExecSetIds(tableName string, snapID uint64, ids []shared.RemoteID) error {
+func snapshotExecSetIds(tableName string, snapID shared.RepositoryID, ids []shared.RemoteID) error {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -389,8 +384,8 @@ func snapshotExecSetIds(tableName string, snapID uint64, ids []shared.RemoteID) 
 	}
 
 	for _, id := range ids {
-		query = fmt.Sprintf("INSERT INTO %s (snapshot_id, id_on_remote) VALUES (?, ?)", tableName)
-		_, err := dbExec(context.Background(), query, snapID, id)
+		query = fmt.Sprintf("INSERT INTO %s (id, snapshot_id, id_on_remote) VALUES (?, ?, ?)", tableName)
+		_, err := dbExec(context.Background(), query, genRepositoryID(), snapID, id)
 		if err != nil {
 			return err
 		}
@@ -399,8 +394,8 @@ func snapshotExecSetIds(tableName string, snapID uint64, ids []shared.RemoteID) 
 	return err
 }
 
-func snapshotExecSetRestoreable(tableName, restoreableColumnName string, snapID uint64) error {
-	query := fmt.Sprintf("UPDATE %s SET %s = 1 WHERE id = %d", tableName, restoreableColumnName, snapID)
+func snapshotExecSetRestoreable(tableName, restoreableColumnName string, snapID shared.RepositoryID) error {
+	query := fmt.Sprintf("UPDATE %s SET %s = 1 WHERE id = %s", tableName, restoreableColumnName, snapID)
 	_, err := dbExec(context.Background(), query)
 	return err
 }

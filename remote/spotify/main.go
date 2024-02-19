@@ -26,7 +26,7 @@ var (
 )
 
 func NewAccount(ctx context.Context,
-	alias *string,
+	alias string,
 	clientID string,
 	clientSecret string,
 	onURL func(url string)) (shared.Account, error) {
@@ -36,12 +36,7 @@ func NewAccount(ctx context.Context,
 		return nil, err
 	}
 
-	if alias == nil || len(*alias) == 0 {
-		randWord := shared.GenerateWord()
-		alias = &randWord
-	}
-
-	account, err := _repo.CreateAccount(*alias, tokens)
+	account, err := _repo.CreateAccount(alias, tokens)
 	if err != nil {
 		return nil, err
 	}

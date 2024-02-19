@@ -44,10 +44,10 @@ func sync2stages(executor func() error) error {
 
 func getAccountsForSync(ctx context.Context) (accountsForSync, error) {
 	result := accountsForSync{
-		LikedAlbums:  map[string]*fullAccount{},
-		LikedArtists: map[string]*fullAccount{},
-		LikedTracks:  map[string]*fullAccount{},
-		Playlists:    map[string]*fullAccount{},
+		LikedAlbums:  map[shared.RepositoryID]*fullAccount{},
+		LikedArtists: map[shared.RepositoryID]*fullAccount{},
+		LikedTracks:  map[shared.RepositoryID]*fullAccount{},
+		Playlists:    map[shared.RepositoryID]*fullAccount{},
 	}
 
 	for _, remote := range _remotes {
@@ -89,7 +89,7 @@ type accountsForSync struct {
 	LikedAlbums,
 	LikedArtists,
 	LikedTracks,
-	Playlists map[string]*fullAccount
+	Playlists map[shared.RepositoryID]*fullAccount
 }
 
 func newFullAccount(acc shared.Account) (*fullAccount, error) {

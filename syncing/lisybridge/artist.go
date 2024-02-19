@@ -5,14 +5,15 @@ import (
 
 	"github.com/oklookat/synchro/linking/linkerimpl"
 	"github.com/oklookat/synchro/repository"
+	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/syncing/syncerimpl"
 )
 
 var (
-	_syncablesLikedArtists = repository.SyncablesArtist{}
+	_syncablesLikedArtists = repository.ArtistSyncable
 )
 
-func syncLikedArtists(ctx context.Context, accounts map[string]*fullAccount) error {
+func syncLikedArtists(ctx context.Context, accounts map[shared.RepositoryID]*fullAccount) error {
 	lnk, err := linkerimpl.NewArtists()
 	if err != nil {
 		return err

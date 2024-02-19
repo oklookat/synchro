@@ -2,31 +2,28 @@ package shared
 
 import (
 	"context"
-	"strconv"
 	"time"
 )
 
-// Example: linked artist entity ID from DB.
-type EntityID uint64
+// Example: ID in database.
+type RepositoryID string
 
-func (e EntityID) String() string {
-	return strconv.FormatUint(uint64(e), 10)
+func (e RepositoryID) String() string {
+	return string(e)
 }
 
-func (e *EntityID) FromString(val string) error {
-	conv, err := strconv.ParseUint(val, 10, 64)
-	if err != nil {
-		return err
-	}
-	*e = EntityID(conv)
-	return err
+// Example: linked artist entity ID from DB.
+type EntityID RepositoryID
+
+func (e EntityID) String() string {
+	return string(RepositoryID(e))
 }
 
 type (
 	// Remote repository.
 	RemoteRepository interface {
 		// Unique ID.
-		ID() string
+		ID() RepositoryID
 
 		// Remote enabled? Not enabled remotes will be excluded from sync/linker/etc.
 		Enabled() bool
@@ -47,7 +44,7 @@ type (
 		Accounts(ctx context.Context) ([]Account, error)
 
 		// Get account by ID. Returns nil, nil if account not found.
-		Account(id string) (Account, error)
+		Account(id RepositoryID) (Account, error)
 
 		// Global remote actions.
 		Actions() (RemoteActions, error)
@@ -56,7 +53,7 @@ type (
 	// Remote account.
 	Account interface {
 		// Unique ID for account.
-		ID() string
+		ID() RepositoryID
 
 		// Account remote.
 		RemoteName() RemoteName

@@ -4,30 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 )
 
-func AccountByID(id uint64) (shared.Account, error) {
+func AccountByID(id shared.RepositoryID) (shared.Account, error) {
 	const query = "SELECT * FROM account WHERE id = ? LIMIT 1"
 	return dbGetOne[Account](context.Background(), query, id)
 }
 
 type Account struct {
-	HID         uint64            `db:"id"`
-	HRemoteName shared.RemoteName `db:"remote_name"`
-	HAuth       string            `db:"auth"`
-	HAlias      string            `db:"alias"`
-	HAddedAt    int64             `db:"added_at"`
+	HID         shared.RepositoryID `db:"id"`
+	HRemoteName shared.RemoteName   `db:"remote_name"`
+	HAuth       string              `db:"auth"`
+	HAlias      string              `db:"alias"`
+	HAddedAt    int64               `db:"added_at"`
 	//
 	theSettings *AccountSettings `db:"-" json:"-"`
 }
 
-func (e Account) ID() string {
-	return strconv.FormatUint(e.HID, 10)
+func (e Account) ID() shared.RepositoryID {
+	return e.HID
 }
 
 func (e Account) RemoteName() shared.RemoteName {

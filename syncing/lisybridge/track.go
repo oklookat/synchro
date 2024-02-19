@@ -5,14 +5,15 @@ import (
 
 	"github.com/oklookat/synchro/linking/linkerimpl"
 	"github.com/oklookat/synchro/repository"
+	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/syncing/syncerimpl"
 )
 
 var (
-	_syncablesLikedTracks = repository.SyncablesTrack{}
+	_syncablesLikedTracks = repository.TrackSyncable
 )
 
-func syncLikedTracks(ctx context.Context, accounts map[string]*fullAccount) error {
+func syncLikedTracks(ctx context.Context, accounts map[shared.RepositoryID]*fullAccount) error {
 	lnk, err := linkerimpl.NewTracks()
 	if err != nil {
 		return err

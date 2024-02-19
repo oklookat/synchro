@@ -24,12 +24,12 @@ func (e Zvuk) NewAccount(alias, token string) (string, error) {
 		err     error
 	)
 	if err := execTask(0, func(ctx context.Context) error {
-		account, err = zvuk.NewAccount(context.Background(), &alias, token)
+		account, err = zvuk.NewAccount(context.Background(), alias, token)
 		return err
 	}); err != nil {
 		return "", err
 	}
-	return account.ID(), err
+	return account.ID().String(), err
 }
 
 func (e Zvuk) Reauth(accountId, token string) error {

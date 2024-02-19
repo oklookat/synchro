@@ -16,12 +16,7 @@ var (
 	_log *logger.Logger
 )
 
-func NewAccount(ctx context.Context, alias *string, token string) (shared.Account, error) {
-	if alias == nil || len(*alias) == 0 {
-		al := shared.GenerateWord()
-		alias = &al
-	}
-
+func NewAccount(ctx context.Context, alias string, token string) (shared.Account, error) {
 	token = strings.TrimSpace(token)
 	tok := newToken(token)
 	auth, err := shared.TokenToAuth(tok)
@@ -29,7 +24,7 @@ func NewAccount(ctx context.Context, alias *string, token string) (shared.Accoun
 		return nil, err
 	}
 
-	account, err := _repo.CreateAccount(*alias, auth)
+	account, err := _repo.CreateAccount(alias, auth)
 	if err != nil {
 		return nil, err
 	}

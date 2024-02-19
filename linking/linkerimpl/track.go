@@ -20,7 +20,7 @@ func NewTracks() (*linker.Static, error) {
 		converted[name] = TracksRemote{repo: ready[name].Repository()}
 	}
 
-	return linker.NewStatic(repository.EntityTrack{}, converted), nil
+	return linker.NewStatic(repository.TrackEntity, converted), nil
 }
 
 type TracksRemote struct {
@@ -40,12 +40,7 @@ func (e TracksRemote) RemoteEntity(ctx context.Context, id shared.RemoteID) (lin
 }
 
 func (e TracksRemote) Linkables() linker.Linkables {
-	real, ok := e.repo.(*repository.Remote)
-	if !ok {
-		_log.Error("real, ok := e.repo.(*repository.Remote)")
-		return nil
-	}
-	return repository.NewLinkableTrack(real)
+	return repository.NewLinkableEntity(repository.EntityNameTrack, e.repo.Name())
 }
 
 func (e TracksRemote) Match(ctx context.Context, target linker.RemoteEntity) (linker.RemoteEntity, error) {
