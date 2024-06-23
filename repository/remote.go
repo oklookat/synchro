@@ -19,7 +19,7 @@ type Remote struct {
 func RemoteByName(name shared.RemoteName) (shared.Remote, error) {
 	parent, ok := Remotes[name]
 	if !ok {
-		return nil, shared.NewErrRemoteNotFound(_packageName, name)
+		return nil, shared.NewErrRemoteNotFound(name)
 	}
 	return parent, nil
 }

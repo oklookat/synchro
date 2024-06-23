@@ -3,12 +3,11 @@ package repository
 import (
 	"context"
 	_ "embed"
+	"os"
 	"strconv"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/oklookat/synchro/darius"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 )
 
@@ -49,21 +48,20 @@ var (
 	//go:embed library.sql
 	_librarySQL string
 	_db         *sqlx.DB
-	_log        *logger.Logger
 )
 
 func Boot(remotes map[shared.RemoteName]shared.Remote) error {
-	_log = logger.WithPackageName(_packageName)
+	const dbPath = "data.sqlite"
 
-	dbFile, err := darius.WrapFile("data.sqlite")
+	_, err := os.OpenFile(dbPath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
-		_log.Error("darius.WrapFile: " + err.Error())
 		return err
 	}
-	if _db, err = sqlx.Open("sqlite3", dbFile.Abs()); err != nil {
-		_log.Error("sqlx.Open: " + err.Error())
+
+	if _db, err = sqlx.Open("sqlite3", dbPath); err != nil {
 		return err
 	}
+
 	if _, err = dbExec(context.Background(), _librarySQL); err != nil {
 		return err
 	}
@@ -79,7 +77,6 @@ func Boot(remotes map[shared.RemoteName]shared.Remote) error {
 
 		// Boot.
 		if err := remotes[name].Boot(repo); err != nil {
-			_log.AddField("name", name.String()).Error("boot")
 			continue
 		}
 

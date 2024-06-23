@@ -10,19 +10,15 @@ import (
 	"github.com/oklookat/yandexauth/v2"
 	"golang.org/x/oauth2"
 
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 )
 
 var (
-	_log *logger.Logger
-
 	errEmptyID = errors.New("empty ID")
 )
 
 const (
 	// YM Windows app.
-
 	_clientID     = "23cabbbdc6cd418abb4b39c32c41195d"
 	_clientSecret = "53bc75238f0c4d08a118e51fe9203300"
 )

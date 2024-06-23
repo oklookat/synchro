@@ -2,6 +2,7 @@ package syncerimpl
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/oklookat/synchro/config"
@@ -130,9 +131,7 @@ func (e *LikeableAccount) Start(ctx context.Context) error {
 		// Already liked in remote
 		// (syncer / DB mistake?).
 		if _, ok := e.likes[id]; ok {
-			_log.
-				AddField("entityID", id).
-				Warn("not present, but already liked")
+			slog.Warn("not present, but already liked", "entityID", id)
 			continue
 		}
 		toLike = append(toLike, id)
@@ -153,15 +152,15 @@ func (e *LikeableAccount) Start(ctx context.Context) error {
 func (e *LikeableAccount) autoRecover() error {
 	ctx := context.Background()
 
-	snapCfg := &config.Snapshots{}
-	if err := config.Get(snapCfg); err != nil {
+	snapCfg, err := config.Get[config.Snapshots](config.KeySnapshots)
+	if err != nil {
 		return err
 	}
 	if !snapCfg.AutoRecover {
 		return nil
 	}
 	if e.IsChangesLiked {
-		_log.Info("auto recover (unlike liked)")
+		slog.Info("auto recover (unlike liked)")
 		var ids shared.RemoteIDSlice[shared.EntityID]
 		ids.FromMapV(e.NewLiked)
 		if err := e.actions.Unlike(ctx, ids); err != nil {
@@ -170,7 +169,7 @@ func (e *LikeableAccount) autoRecover() error {
 		e.IsChangesLiked = false
 	}
 	if e.IsChangesUnliked {
-		_log.Info("auto recover (like unliked)")
+		slog.Info("auto recover (like unliked)")
 		var ids shared.RemoteIDSlice[shared.EntityID]
 		ids.FromMapV(e.NewUnliked)
 		if err := e.actions.Like(ctx, ids); err != nil {

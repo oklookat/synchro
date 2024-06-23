@@ -5,15 +5,9 @@ import (
 	"net/url"
 )
 
-const _deezer = "deezer"
-
 type Deezer struct {
-	Host string `json:"host" mapstructure:"host"`
-	Port int    `json:"port" mapstructure:"port"`
-}
-
-func (c Deezer) Key() string {
-	return _deezer
+	Host string `json:"host"`
+	Port int    `json:"port"`
 }
 
 func (c *Deezer) Default() {

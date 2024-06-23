@@ -1,20 +1,7 @@
 package linker
 
 import (
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
-)
-
-func Boot() {
-	_log = logger.WithPackageName(_packageName)
-}
-
-var (
-	_log *logger.Logger
-)
-
-const (
-	_packageName = "linker"
 )
 
 type (

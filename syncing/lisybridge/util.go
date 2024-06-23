@@ -2,6 +2,7 @@ package lisybridge
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/oklookat/synchro/linking/linker"
 	"github.com/oklookat/synchro/linking/linkerimpl"
@@ -33,7 +34,7 @@ func linkStatic(
 }
 
 func sync2stages(executor func() error) error {
-	_log.Info("Synchronizing something...")
+	slog.Info("Syncing something...")
 	for x := 0; x < 2; x++ {
 		if err := executor(); err != nil {
 			return err

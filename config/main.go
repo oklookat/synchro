@@ -1,119 +1,94 @@
 package config
 
 import (
-	"fmt"
+	"encoding/json"
+	"errors"
+	"os"
+)
 
-	"github.com/gookit/event"
-	"github.com/oklookat/synchro/darius"
-	"github.com/oklookat/synchro/logger"
-	"github.com/oklookat/synchro/shared"
-	"github.com/spf13/viper"
+type Key string
+
+const (
+	KeyGeneral   Key = "general"
+	KeyLinker    Key = "linker"
+	KeySnapshots Key = "snapshots"
+	KeySpotify   Key = "spotify"
+	KeyDeezer    Key = "deezer"
 )
 
 var (
-	_log        *logger.Logger
-	_configFile *darius.File
+	_cfgFile *os.File
+	_configs = map[Key]Configer{
+		KeyGeneral:   &General{},
+		KeyLinker:    &Linker{},
+		KeySnapshots: &Snapshots{},
+		KeySpotify:   &Spotify{},
+		KeyDeezer:    &Deezer{},
+	}
 )
 
-var configs = []Configer{
-	&General{},
-	&Linker{},
-	&Snapshots{},
-	&Spotify{},
-	&Deezer{},
+const (
+	_fileFlags = os.O_CREATE | os.O_RDWR
+	_filePerm  = 0666
+)
+
+type Configer interface {
+	// Set default values.
+	Default()
+	// Validate.
+	Validate() error
 }
 
 func Boot() error {
-	setDefaults()
+	for i := range _configs {
+		_configs[i].Default()
+	}
 
-	filed, err := darius.WrapFile("config.json")
+	cfgFile, err := os.OpenFile("config.json", _fileFlags, _filePerm)
 	if err != nil {
 		return err
 	}
-	_configFile = filed
-	viper.SetConfigFile(filed.Abs())
+	_cfgFile = cfgFile
 
-	if err := viper.ReadInConfig(); err != nil {
-		// Not found.
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Create.
-			if err = _configFile.CreateIfNotExists(); err != nil {
-				return err
-			}
-			return viper.WriteConfig()
+	if err := json.NewDecoder(_cfgFile).Decode(&_configs); err != nil {
+		if err = Save(); err != nil {
+			return err
 		}
-
-		// Bad format.
-		if _, ok := err.(viper.ConfigParseError); ok {
-			// Clean, write.
-			if err = _configFile.Clean(); err != nil {
-				return err
-			}
-			return viper.WriteConfig()
-		}
-
-		return fmt.Errorf("config: %e", err)
 	}
 
 	return validateSetAll()
 }
 
-func SetLogger() {
-	_log = logger.WithPackageName("config")
+func Save() error {
+	if err := _cfgFile.Close(); err != nil {
+		return err
+	}
+	err := os.Truncate(_cfgFile.Name(), 0)
+	if err != nil {
+		return err
+	}
+	if _cfgFile, err = os.OpenFile(_cfgFile.Name(), _fileFlags, _filePerm); err != nil {
+		return err
+	}
+	enc := json.NewEncoder(_cfgFile)
+	enc.SetIndent("", "\t")
+	return enc.Encode(&_configs)
 }
 
-func Save(what Configer) error {
-	if err := what.Validate(); err != nil {
-		return err
+func Get[T any](what Key) (*T, error) {
+	cfg, ok := _configs[what]
+	if !ok {
+		return new(T), errors.New("unknown key: " + string(what))
 	}
-	// json and mapstructure tags are ignored (idk why).
-	viper.Set(what.Key(), what)
-	if err := viper.ReadInConfig(); err != nil {
-		return err
-	}
-	if err := viper.WriteConfig(); err != nil {
-		return err
-	}
-	event.Fire(shared.OnConfigChanged.String(), nil)
-	return nil
-}
-
-func Get(who Configer) error {
-	var err error
-	if err = viper.ReadInConfig(); err != nil {
-		return err
-	}
-	if err := viper.UnmarshalKey(who.Key(), who); err != nil {
-		_log.AddField("key", who.Key()).
-			Error("save: " + err.Error())
-	}
-	return err
+	cfgTyped, _ := cfg.(T)
+	return &cfgTyped, nil
 }
 
 func validateSetAll() error {
-	for _, cfg := range configs {
-		var err error
-		if err = Get(cfg); err == nil {
-			continue
-		}
-		cfg.Default()
-		if err := Save(cfg); err != nil {
-			_log.Error("save: " + err.Error())
-			return err
+	for _, cfg := range _configs {
+		if err := cfg.Validate(); err != nil {
+			cfg.Default()
 		}
 	}
-	return nil
-}
-
-func setDefaults() {
-	for _, cfg := range configs {
-		cfg.Default()
-		viper.SetDefault(cfg.Key(), cfg)
-	}
-}
-
-type Configer interface {
-	Key() string
-	Default()
-	Validate() error
+	return Save()
 }

@@ -4,21 +4,15 @@ import (
 	"errors"
 )
 
-const _snapshots = "snapshots"
-
 type Snapshots struct {
 	// Try to restore account library if account sync failed?
-	AutoRecover bool `json:"autoRecover" mapstructure:"autoRecover"`
+	AutoRecover bool `json:"autoRecover"`
 
 	// Create snapshot when sync session starts?
-	CreateWhenSyncing bool `json:"createWhenSyncing" mapstructure:"createWhenSyncing"`
+	CreateWhenSyncing bool `json:"createWhenSyncing"`
 
 	// Max auto snapshots count.
-	MaxAuto int `json:"maxAuto" mapstructure:"maxAuto"`
-}
-
-func (c Snapshots) Key() string {
-	return _snapshots
+	MaxAuto int `json:"maxAuto"`
 }
 
 func (c *Snapshots) Default() {

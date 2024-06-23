@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -30,12 +31,6 @@ func genOlderQuery(tableName string, olderThan time.Time, syncParamName string) 
 	return fmt.Sprintf("SELECT * FROM %s WHERE %s_modified_at < %s", tableName, syncParamName, dated)
 }
 
-func getNotMatchedCountQuery(tableName string, remoteName shared.RemoteName) string {
-	return fmt.Sprintf(`SELECT COUNT(*)
-	FROM %s
-	WHERE id_on_remote IS NULL AND remote_name=%s`, tableName, remoteName)
-}
-
 func execSnapshotGetCountQuery(tableName string, snapshotId shared.RepositoryID) (int, error) {
 	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE snapshot_id = ?", tableName)
 	result, err := dbGetOneSimple[int](context.Background(), query, snapshotId)
@@ -54,7 +49,7 @@ func dbGetOne[T any](ctx context.Context, query string, args ...interface{}) (*T
 		return nil, nil
 	}
 	if err != nil {
-		_log.AddField("query", query).Error("dbGetOne")
+		slog.Error(err.Error(), "dbGetOne", query)
 	}
 	return out, err
 }
@@ -68,7 +63,7 @@ func dbGetOneSimple[T comparable](ctx context.Context, query string, args ...int
 		return nil, nil
 	}
 	if err != nil {
-		_log.AddField("query", query).Error("dbGetOneSimple")
+		slog.Error(err.Error(), "dbGetOneSimple", query)
 	}
 	return out, err
 }
@@ -79,15 +74,17 @@ func dbGetOneSimple[T comparable](ctx context.Context, query string, args ...int
 func dbGetManyConvert[T any, R any](ctx context.Context, hook func(*T) error, query string, args ...interface{}) ([]R, error) {
 	rows, err := _db.QueryxContext(ctx, query, args...)
 
-	theLog := _log.
-		AddField("where", "dbGetManyConvert").
-		AddField("query", query)
+	defer func() {
+		if err != nil {
+			slog.Error(err.Error(), "dbGetManyConvert", query)
+		}
+	}()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			err = nil
 			return nil, nil
 		}
-		theLog.Error("dbGetOne")
 		return nil, err
 	}
 
@@ -100,13 +97,11 @@ func dbGetManyConvert[T any, R any](ctx context.Context, hook func(*T) error, qu
 		newType := new(T)
 		err = rows.StructScan(newType)
 		if err != nil {
-			theLog.Error("StructScan")
 			return result, err
 		}
 
 		if hook != nil {
 			if err = hook(newType); err != nil {
-				theLog.Error("hook")
 				return nil, err
 			}
 		}
@@ -114,8 +109,7 @@ func dbGetManyConvert[T any, R any](ctx context.Context, hook func(*T) error, qu
 		converted, ok := any(newType).(R)
 		if !ok {
 			err = errors.New("dbGetMany: T not implements R")
-			theLog.Error(err.Error())
-			return nil, errors.New("dbGetMany: T not implements R")
+			return nil, err
 		}
 
 		result = append(result, converted)
@@ -127,15 +121,17 @@ func dbGetManyConvert[T any, R any](ctx context.Context, hook func(*T) error, qu
 func dbGetMany[T any](ctx context.Context, query string, hook func(*T) error, args ...interface{}) ([]*T, error) {
 	rows, err := _db.QueryxContext(ctx, query, args...)
 
-	theLog := _log.
-		AddField("where", "dbGetMany").
-		AddField("query", query)
+	defer func() {
+		if err != nil {
+			slog.Error(err.Error(), "dbGetMany", query)
+		}
+	}()
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			err = nil
 			return nil, nil
 		}
-		theLog.Error("")
 		return nil, err
 	}
 
@@ -148,13 +144,11 @@ func dbGetMany[T any](ctx context.Context, query string, hook func(*T) error, ar
 		newType := new(T)
 		err = rows.StructScan(newType)
 		if err != nil {
-			theLog.Error("StructScan")
 			return result, err
 		}
 
 		if hook != nil {
 			if err = hook(newType); err != nil {
-				theLog.Error("hook")
 				return nil, err
 			}
 		}
@@ -170,10 +164,7 @@ func dbExec(ctx context.Context, query string, args ...interface{}) (sql.Result,
 	result, err := _db.ExecContext(ctx, query, args...)
 
 	if err != nil {
-		theLog := _log.
-			AddField("where", "dbExec").
-			AddField("query", query)
-		theLog.Error("")
+		slog.Error(err.Error(), "dbExec", query)
 	}
 	return result, err
 }

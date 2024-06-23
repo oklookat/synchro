@@ -57,11 +57,11 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			albums[shared.RemoteID(albumsd.Albums[i].ID)] = newAlbum(&albumsd.Albums[i].FullAlbum, e.client)
 		}
 
-		if len(albums) >= albumsd.Total {
+		if len(albums) >= int(albumsd.Total) {
 			break
 		}
 
-		offset += albumsd.Limit
+		offset += int(albumsd.Limit)
 	}
 
 	return albums, nil
@@ -143,11 +143,11 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			tracks[shared.RemoteID(currentUser.Tracks[i].ID)] = newTrack(currentUser.Tracks[i].FullTrack, e.client)
 		}
 
-		if len(tracks) >= currentUser.Total || len(currentUser.Next) == 0 {
+		if len(tracks) >= int(currentUser.Total) || len(currentUser.Next) == 0 {
 			break
 		}
 
-		offset += currentUser.Limit
+		offset += int(currentUser.Limit)
 	}
 
 	return tracks, nil

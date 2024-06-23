@@ -57,7 +57,7 @@ func (e Album) Artists() []shared.RemoteArtist {
 }
 
 func (e Album) TrackCount() int {
-	return e.album.Tracks.Total
+	return int(e.album.Tracks.Total)
 }
 
 func (e Album) Year() int {

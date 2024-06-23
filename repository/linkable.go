@@ -47,23 +47,6 @@ func (e LinkableEntity) getOne(ctx context.Context, query string, args ...interf
 	return res, err
 }
 
-func (e LinkableEntity) Links() ([]linker.Linked, error) {
-	query := fmt.Sprintf("SELECT * FROM linked_%s WHERE remote_name=?", e.entityName)
-	return dbGetManyConvert[LinkedEntity, linker.Linked](context.Background(), func(le *LinkedEntity) error {
-		le.entityName = e.entityName
-		return nil
-	}, query, e.remoteName)
-}
-
-func (e LinkableEntity) NotMatchedCount() (int, error) {
-	query := getNotMatchedCountQuery("linked_"+e.entityName.String(), e.remoteName)
-	result, err := dbGetOne[int](context.Background(), query)
-	if err != nil {
-		return 0, err
-	}
-	return *result, err
-}
-
 func DebugSetEntityMissing(entityID uint64, entityName string, remoteName shared.RemoteName) error {
 	query := fmt.Sprintf(`UPDATE linked_%s SET id_on_remote=? WHERE %s_id=? AND remote_name=?`, entityName, entityName)
 	_, err := dbExec(context.Background(), query, entityID, remoteName)

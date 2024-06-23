@@ -8,12 +8,7 @@ import (
 
 	"github.com/oklookat/gozvuk"
 
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
-)
-
-var (
-	_log *logger.Logger
 )
 
 func NewAccount(ctx context.Context, alias string, token string) (shared.Account, error) {

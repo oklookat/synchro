@@ -2,9 +2,8 @@ package linker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
+	"log/slog"
 	"time"
 
 	"github.com/oklookat/synchro/config"
@@ -39,12 +38,6 @@ type (
 
 		// Example: get linked spotify artist by its ID on Spotify.
 		LinkedRemoteID(shared.RemoteID) (Linked, error)
-
-		// All links.
-		Links() ([]Linked, error)
-
-		// Count of not matched entities.
-		NotMatchedCount() (int, error)
 	}
 
 	RemoteEntity interface {
@@ -99,18 +92,11 @@ type (
 		// Linked RemoteEntity.
 		Linked Linked
 	}
-
-	// Links import/export database.
-	IEData struct {
-		Remotes map[shared.RemoteName]struct {
-			Entities map[shared.EntityID]*shared.RemoteID `json:"entities"`
-		} `json:"remotes"`
-	}
 )
 
 func NewStatic(repo Repository, remotes map[shared.RemoteName]Remote) *Static {
-	_log.AddField("lovesYou", "linker.Static").
-		Info("~~~ WISH ME LUCK! <3 ~~~")
+	slog.
+		Info("lovesYou", "linker.Static", "~~~ WISH ME LUCK! <3 ~~~")
 	return &Static{
 		repo:    repo,
 		remotes: remotes,
@@ -127,17 +113,14 @@ type Static struct {
 
 // From remote entity to linked.
 func (e Static) FromRemote(ctx context.Context, target RemoteEntity) (FromRemoteResult, error) {
-	theLog := _log.
-		AddField("name", target.Name()).
-		AddField("remoteID", target.ID().String()).
-		AddField("from", target.RemoteName().String())
+	slog.Info("name", target.Name(), "remoteID", target.ID().String(), "from", target.RemoteName().String())
 
 	result := FromRemoteResult{}
 	result.RemoteEntity = target
 
 	targetRemote, ok := e.remotes[target.RemoteName()]
 	if !ok {
-		return result, shared.NewErrRemoteNotFound(_packageName, target.RemoteName())
+		return result, shared.NewErrRemoteNotFound(target.RemoteName())
 	}
 
 	// Link exists?
@@ -151,7 +134,7 @@ func (e Static) FromRemote(ctx context.Context, target RemoteEntity) (FromRemote
 		// Missing before?
 		if linked.RemoteID() == nil {
 			// Set ID.
-			theLog.Info("SET ID (MISSING BEFORE)")
+			slog.Info("SET ID (MISSING BEFORE)")
 			updId := target.ID()
 			if err = linked.SetRemoteID(&updId); err != nil {
 				return result, err
@@ -242,7 +225,7 @@ func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.
 
 	targetRem, ok := e.remotes[target]
 	if !ok {
-		return result, shared.NewErrRemoteNotFound(_packageName, target)
+		return result, shared.NewErrRemoteNotFound(target)
 	}
 
 	defer e.repo.DeleteNotLinked()
@@ -267,9 +250,9 @@ func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.
 
 		// Recheck? Maybe it's not missing now.
 
-		cfg := &config.Linker{}
-		if err := config.Get(cfg); err != nil {
-			cfg.Default()
+		cfg, err := config.Get[config.Linker](config.KeyLinker)
+		if err != nil {
+			return result, err
 		}
 
 		if !cfg.RecheckMissing {
@@ -371,151 +354,6 @@ func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.
 	return result, errors.New("broken links")
 }
 
-// Import links for all remotes.
-func (e Static) Import(r io.Reader) error {
-	data := &IEData{}
-	if err := json.NewDecoder(r).Decode(data); err != nil {
-		return err
-	}
-
-	defer e.repo.DeleteNotLinked()
-
-	skip := map[shared.EntityID]bool{}
-
-	// Step 1: skip links that already exists.
-	for remoteName, remote := range e.remotes {
-		dataRemote, ok := data.Remotes[remoteName]
-
-		// Skip unknown remote.
-		if !ok {
-			continue
-		}
-
-		// Find any remote that have link.
-		for eId, remId := range dataRemote.Entities {
-			if _, ok := skip[eId]; ok {
-				continue
-			}
-
-			// Exists?
-			link, err := remote.Linkables().LinkedRemoteID(*remId)
-			if err != nil {
-				return err
-			}
-
-			// Exists.
-			if !shared.IsNil(link) {
-				// Skip.
-				skip[eId] = true
-				break
-			}
-		}
-	}
-
-	// Step 2: create links.
-
-	// [ID FROM DATA]ID FROM CURRENT DB.
-	dataDbMapping := map[shared.EntityID]shared.EntityID{}
-
-	for remoteName, remote := range e.remotes {
-		dataRemote, ok := data.Remotes[remoteName]
-		if !ok {
-			// Skip unknown remote.
-			continue
-		}
-		for eId, remId := range dataRemote.Entities {
-			// Skip already linked.
-			if _, ok := skip[eId]; ok {
-				continue
-			}
-
-			var entityToLink shared.EntityID
-			if entID, ok := dataDbMapping[eId]; ok {
-				// Entity created before.
-				entityToLink = entID
-			} else {
-				// New entity.
-				newEntity, err := e.repo.CreateEntity()
-				if err != nil {
-					return err
-				}
-				entityToLink = newEntity
-				// Mark as *Entity created before*.
-				dataDbMapping[eId] = newEntity
-			}
-
-			// Make link.
-			var copyRemId *shared.RemoteID
-			if remId != nil {
-				realCopy := *remId
-				copyRemId = &realCopy
-			}
-			_, err := remote.Linkables().CreateLink(context.Background(), entityToLink, copyRemId)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// Export links from all remotes to json.
-func (e Static) Export(dest io.Writer) error {
-	result := &IEData{}
-	result.Remotes = map[shared.RemoteName]struct {
-		Entities map[shared.EntityID]*shared.RemoteID "json:\"entities\""
-	}{}
-
-	for remoteName, remote := range e.remotes {
-		result.Remotes[remoteName] = struct {
-			Entities map[shared.EntityID]*shared.RemoteID "json:\"entities\""
-		}{}
-		resRem := result.Remotes[remoteName]
-		resRem.Entities = map[shared.EntityID]*shared.RemoteID{}
-		result.Remotes[remoteName] = resRem
-
-		links, err := remote.Linkables().Links()
-		if err != nil {
-			return err
-		}
-
-		for _, linked := range links {
-			var remId *shared.RemoteID
-			if linked.RemoteID() != nil {
-				copyId := *linked.RemoteID()
-				remId = &copyId
-			}
-			result.Remotes[remoteName].Entities[linked.EntityID()] = remId
-		}
-	}
-
-	return json.NewEncoder(dest).Encode(result)
-}
-
-// Clean linker database for entities.
-func (e Static) Clean() error {
-	return e.repo.DeleteAll()
-}
-
-// Get links for target.
-func (e Static) Links(target shared.RemoteName) ([]Linked, error) {
-	rem, ok := e.remotes[target]
-	if !ok {
-		return nil, shared.NewErrRemoteNotFound(_packageName, target)
-	}
-	return rem.Linkables().Links()
-}
-
-// Get count of not matched entities.
-func (e Static) NotMatchedCount(target shared.RemoteName) (int, error) {
-	rem, ok := e.remotes[target]
-	if !ok {
-		return 0, shared.NewErrRemoteNotFound(_packageName, target)
-	}
-	return rem.Linkables().NotMatchedCount()
-}
-
 type findEntitiesToLinkResult struct {
 	// Target used for fine entities to link.
 	Target RemoteEntity
@@ -537,12 +375,7 @@ func (e Static) findEntitiesToLink(ctx context.Context, target RemoteEntity) (fi
 		TargetRemoteId: map[shared.RemoteName]*shared.RemoteID{},
 	}
 
-	theLog := _log.
-		AddField("from", target.RemoteName().String()).
-		AddField("name", target.Name()).
-		AddField("remoteID", target.ID().String())
-
-	theLog.Info("FIND ENTITY FOR")
+	slog.Info("FIND ENTITY FOR", "from", target.RemoteName().String(), "name", target.Name(), "remoteID", target.ID().String())
 
 	// Add current.
 	targetId := target.ID()
@@ -599,34 +432,31 @@ func (e Static) findEntitiesToLink(ctx context.Context, target RemoteEntity) (fi
 func (e Static) search(ctx context.Context, who RemoteEntity, target shared.RemoteName) (RemoteEntity, error) {
 	targetRem, ok := e.remotes[target]
 	if !ok {
-		return nil, shared.NewErrRemoteNotFound(_packageName, target)
+		return nil, shared.NewErrRemoteNotFound(target)
 	}
 
-	theLog := _log.
-		AddField("from", who.RemoteName().String()).
-		AddField("name", who.Name()).
-		AddField("remoteID", who.ID().String()).
-		AddField("to", target.String())
-
-	theLog.Info("==== 🔎 ====")
+	slog.Info("==== 🔎 ====", "from", who.RemoteName().String(),
+		"name", who.Name(),
+		"remoteID", who.ID().String(),
+		"to", target.String())
 
 	// same remotes.
 	if target == who.RemoteName() {
-		theLog.Info("✅ (same remotes)")
+		slog.Info("✅ (same remotes)")
 		return who, nil
 	}
 
 	// Match.
-	matched, err := targetRem.Match(theLog.WithContext(ctx), who)
+	matched, err := targetRem.Match(ctx, who)
 	if err != nil {
 		return nil, err
 	}
 	if shared.IsNil(matched) {
-		theLog.Info("❌")
+		slog.Info("❌")
 		return nil, err
 	}
 
-	theLog.AddField("matchedRemoteID", matched.ID().String()).Info("✅")
+	slog.Info("✅", "matchedRemoteID", matched.ID().String())
 
 	return matched, err
 }

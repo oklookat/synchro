@@ -5,15 +5,9 @@ import (
 	"net/url"
 )
 
-const _spotify = "spotify"
-
 type Spotify struct {
-	Host string `json:"host" mapstructure:"host"`
-	Port int    `json:"port" mapstructure:"port"`
-}
-
-func (c Spotify) Key() string {
-	return _spotify
+	Host string `json:"host"`
+	Port int    `json:"port"`
 }
 
 func (c *Spotify) Default() {

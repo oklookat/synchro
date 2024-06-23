@@ -55,7 +55,7 @@ func (e *Artist) OldestAlbumsNames(ctx context.Context) ([20]string, error) {
 		if len(page.Next) == 0 {
 			break
 		}
-		offset += page.Limit
+		offset += int(page.Limit)
 	}
 
 	// Oldest first.
@@ -101,7 +101,7 @@ func (e *Artist) OldestSinglesNames(ctx context.Context) ([20]string, error) {
 		if len(result.Next) == 0 {
 			break
 		}
-		offset += result.Limit
+		offset += int(result.Limit)
 	}
 
 	// Oldest first.

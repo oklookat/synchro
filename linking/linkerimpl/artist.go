@@ -3,10 +3,10 @@ package linkerimpl
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 
 	"github.com/oklookat/synchro/linking/linker"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/repository"
 	"github.com/oklookat/synchro/shared"
 )
@@ -14,7 +14,7 @@ import (
 func NewArtists() (*linker.Static, error) {
 	ready := checkRemotes()
 	if len(ready) == 0 {
-		return nil, shared.NewErrNoAvailableRemotes(_packageName)
+		return nil, shared.NewErrNoAvailableRemotes()
 	}
 
 	converted := map[shared.RemoteName]linker.Remote{}
@@ -47,8 +47,6 @@ func (e ArtistsRemote) Linkables() linker.Linkables {
 }
 
 func (e ArtistsRemote) Match(ctx context.Context, target linker.RemoteEntity) (linker.RemoteEntity, error) {
-	theLog := logger.FromContext(ctx)
-
 	realTarget, ok := target.(shared.RemoteArtist)
 	if !ok {
 		return nil, errors.New("realTarget, ok := target.(shared.RemoteArtist)")
@@ -118,7 +116,7 @@ func (e ArtistsRemote) Match(ctx context.Context, target linker.RemoteEntity) (l
 		if len(searchResult) > 0 {
 			// Just compare first result by name.
 			if strings.EqualFold(shared.Normalize(target.Name()), shared.Normalize(searchResult[0].Name())) {
-				theLog.Warn("POTENTIAL MISMATCH (compared by names only)")
+				slog.Warn("POTENTIAL MISMATCH (compared by names only)")
 				return searchResult[0], err
 			}
 		}

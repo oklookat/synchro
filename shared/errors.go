@@ -10,34 +10,29 @@ var (
 	ErrNoRemoteActions = errors.New("remote actions not available")
 )
 
-func NewErrRemoteNotFound(prefix string, name RemoteName) ErrRemoteNotFound {
+func NewErrRemoteNotFound(name RemoteName) ErrRemoteNotFound {
 	return ErrRemoteNotFound{
-		Prefix: prefix,
-		Name:   name,
+		Name: name,
 	}
 }
 
 type ErrRemoteNotFound struct {
-	Prefix string
-	Name   RemoteName
+	Name RemoteName
 }
 
 func (e ErrRemoteNotFound) Error() string {
-	return fmt.Sprintf("%s: remote with name '%s' not found", e.Prefix, e.Name.String())
+	return fmt.Sprintf("remote '%s' not found", e.Name.String())
 }
 
-func NewErrNoAvailableRemotes(prefix string) ErrNoAvailableRemotes {
-	return ErrNoAvailableRemotes{
-		Prefix: prefix,
-	}
+func NewErrNoAvailableRemotes() ErrNoAvailableRemotes {
+	return ErrNoAvailableRemotes{}
 }
 
 type ErrNoAvailableRemotes struct {
-	Prefix string
 }
 
 func (e ErrNoAvailableRemotes) Error() string {
-	return fmt.Sprintf("%s: no available remotes", e.Prefix)
+	return "No available remotes"
 }
 
 func NewErrAccountNotExists(prefix string, id string) ErrAccountNotExists {

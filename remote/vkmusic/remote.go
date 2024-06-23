@@ -2,10 +2,10 @@ package vkmusic
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 
 	"github.com/oklookat/govkm"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 )
 
@@ -21,7 +21,6 @@ type Remote struct {
 }
 
 func (s *Remote) Boot(repo shared.RemoteRepository) error {
-	_log = logger.WithPackageName(RemoteName.String())
 	_repo = repo
 	return nil
 }
@@ -48,7 +47,7 @@ func (s Remote) Actions() (shared.RemoteActions, error) {
 	for i := range accounts {
 		client, err = getClient(accounts[i])
 		if err != nil {
-			_log.Error("getClient: " + err.Error())
+			slog.Error("getClient: " + err.Error())
 			continue
 		}
 		break

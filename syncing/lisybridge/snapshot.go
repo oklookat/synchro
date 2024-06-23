@@ -100,18 +100,18 @@ func (h *snapshotHooker) onPlaylists(ctx context.Context, account shared.Account
 	return nil
 }
 
-func (h *snapshotHooker) cache() {
+func (h *snapshotHooker) cache() error {
 	if h.snaps == nil {
 		h.snaps = map[shared.RemoteName]snapshot.Snapshot{}
 	}
 	if h.cfg == nil {
-		cfg := &config.Snapshots{}
-		if err := config.Get(cfg); err != nil {
-			_log.Error("snapshotHooker config.Get: " + err.Error())
-			cfg.Default()
+		cfg, err := config.Get[config.Snapshots](config.KeySnapshots)
+		if err != nil {
+			return err
 		}
 		h.cfg = cfg
 	}
+	return nil
 }
 
 func (h *snapshotHooker) manageSnaps(where shared.RemoteName, account shared.Account) error {

@@ -2,6 +2,7 @@ package linker
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/oklookat/synchro/shared"
 )
@@ -49,8 +50,7 @@ type (
 )
 
 func NewDynamic(repo RepositoryDynamic, remotes map[shared.RemoteName]RemoteDynamic) *Dynamic {
-	_log.AddField("lovesYou", "linker.Dynamic").
-		Info("~~~ LET'S CREATE SOME THINGS! ~~~")
+	slog.Info("lovesYou", "linker.Dynamic", "~~~ LET'S CREATE SOME THINGS! ~~~")
 	return &Dynamic{
 		repo:    repo,
 		remotes: remotes,
@@ -66,7 +66,7 @@ type Dynamic struct {
 func (e Dynamic) FromRemote(ctx context.Context, target RemoteEntity) (LinkedDynamic, RemoteEntity, error) {
 	rem, ok := e.remotes[target.RemoteName()]
 	if !ok {
-		return nil, nil, shared.NewErrRemoteNotFound(_packageName, target.RemoteName())
+		return nil, nil, shared.NewErrRemoteNotFound(target.RemoteName())
 	}
 
 	// Link exists?
@@ -89,7 +89,7 @@ func (e Dynamic) FromRemote(ctx context.Context, target RemoteEntity) (LinkedDyn
 func (e Dynamic) ToRemote(ctx context.Context, id shared.EntityID, target shared.RemoteName, createIfNot bool) (LinkedDynamic, error) {
 	targetRem, ok := e.remotes[target]
 	if !ok {
-		return nil, shared.NewErrRemoteNotFound(_packageName, target)
+		return nil, shared.NewErrRemoteNotFound(target)
 	}
 
 	// Link exists?
@@ -147,7 +147,7 @@ func (e Dynamic) createLinks(ctx context.Context, target shared.RemoteName, orig
 	// Get current rem/account.
 	rem, ok := e.remotes[target]
 	if !ok {
-		return nil, shared.NewErrRemoteNotFound(_packageName, target)
+		return nil, shared.NewErrRemoteNotFound(target)
 	}
 	defer e.repo.DeleteNotLinked()
 

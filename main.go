@@ -4,20 +4,17 @@ import (
 	"C"
 )
 import (
-	"os"
-
-	"github.com/joho/godotenv"
 	"github.com/oklookat/synchro/commander"
 )
 
 func main() {
 	// for testing
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-	commander.SetOnLogger(&onLogger{})
-	if err := commander.Boot(os.Getenv("DATA_DIR")); err != nil {
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	//commander.SetOnLogger(&onLogger{})
+	if err := commander.Boot(); err != nil {
 		panic(err)
 	}
 }

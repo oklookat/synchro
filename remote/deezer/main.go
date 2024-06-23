@@ -6,15 +6,12 @@ import (
 	"github.com/oklookat/deezus"
 	"github.com/oklookat/deezus/deezerauth"
 	"github.com/oklookat/synchro/config"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 	"golang.org/x/oauth2"
 )
 
 var (
 	_state = "abc123"
-
-	_log *logger.Logger
 )
 
 func NewAccount(
@@ -62,14 +59,17 @@ func Reauth(
 }
 
 func getToken(ctx context.Context, appID, appSecret string, onURL func(url string)) (*oauth2.Token, error) {
-	return deezerauth.New(ctx, getArgs(appID, appSecret, onURL))
+	args, err := getArgs(appID, appSecret, onURL)
+	if err != nil {
+		return nil, err
+	}
+	return deezerauth.New(ctx, args)
 }
 
-func getArgs(appID, appSecret string, onURL func(url string)) deezerauth.AuthArgs {
-	cfg := &config.Deezer{}
-	if err := config.Get(cfg); err != nil {
-		cfg.Default()
-		err = nil
+func getArgs(appID, appSecret string, onURL func(url string)) (deezerauth.AuthArgs, error) {
+	cfg, err := config.Get[config.Deezer](config.KeyDeezer)
+	if err != nil {
+		return deezerauth.AuthArgs{}, err
 	}
 
 	perms := []deezerauth.Permission{
@@ -89,7 +89,7 @@ func getArgs(appID, appSecret string, onURL func(url string)) deezerauth.AuthArg
 		Port:        cfg.Port,
 		Perms:       perms,
 		OnURL:       onURL,
-	}
+	}, err
 }
 
 func getClient(account shared.Account) (*deezus.Client, error) {

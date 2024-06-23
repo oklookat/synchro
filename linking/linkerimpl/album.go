@@ -12,7 +12,7 @@ import (
 func NewAlbums() (*linker.Static, error) {
 	ready := checkRemotes()
 	if len(ready) == 0 {
-		return nil, shared.NewErrNoAvailableRemotes(_packageName)
+		return nil, shared.NewErrNoAvailableRemotes()
 	}
 
 	converted := map[shared.RemoteName]linker.Remote{}

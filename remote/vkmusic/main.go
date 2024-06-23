@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/oklookat/govkm"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/vkmauth"
 
@@ -15,8 +14,6 @@ import (
 )
 
 var (
-	_log *logger.Logger
-
 	errNilPlaylist = errors.New("nil playlist")
 	errNilAlbum    = errors.New("nil album")
 )

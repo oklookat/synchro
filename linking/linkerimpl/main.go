@@ -2,22 +2,15 @@ package linkerimpl
 
 import (
 	"github.com/oklookat/synchro/linking/linker"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 )
 
 var (
-	_log     *logger.Logger
 	_remotes map[shared.RemoteName]shared.Remote
-)
-
-const (
-	_packageName = "linkerimpl"
 )
 
 func Boot(remotes map[shared.RemoteName]shared.Remote) {
 	_remotes = remotes
-	_log = logger.WithPackageName(_packageName)
 }
 
 func NewRemoteEntity(from shared.RemoteEntity) linker.RemoteEntity {

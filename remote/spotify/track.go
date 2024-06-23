@@ -60,7 +60,7 @@ func (e *Track) Album() (shared.RemoteAlbum, error) {
 }
 
 func (e Track) LengthMs() int {
-	return e.track.Duration
+	return int(e.track.Duration)
 }
 
 func (e Track) Year() int {

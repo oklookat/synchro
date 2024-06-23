@@ -1,14 +1,8 @@
 package config
 
-const _linker = "linker"
-
 type Linker struct {
 	// Recheck missing entities?
-	RecheckMissing bool `json:"recheckMissing" mapstructure:"recheckMissing"`
-}
-
-func (c Linker) Key() string {
-	return _linker
+	RecheckMissing bool `json:"recheckMissing"`
 }
 
 func (c *Linker) Default() {

@@ -15,7 +15,4 @@ const (
 	// No fields.
 	OnAutoSyncStart Event = "OnAutoSyncStart"
 	OnConfigChanged Event = "OnConfigChanged"
-
-	// "Msg", "Level" fields.
-	OnLog Event = "OnLog"
 )

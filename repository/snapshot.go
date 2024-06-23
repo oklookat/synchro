@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oklookat/synchro/config"
 	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/synchro/snapshot"
 )
@@ -18,11 +17,6 @@ type Snapshotter struct {
 }
 
 func (e Snapshotter) Create(in shared.RemoteName, alias string, auto bool) (snapshot.Snapshot, error) {
-	cfg := &config.Snapshots{}
-	if err := config.Get(cfg); err != nil {
-		cfg.Default()
-	}
-
 	const query = "INSERT INTO snapshot (id, remote_name, alias, auto, created_at) VALUES (?, ?, ?, ?, ?) RETURNING *;"
 	return dbGetOne[Snapshot](context.Background(), query, genRepositoryID(), in, alias, auto, shared.TimestampNow())
 }

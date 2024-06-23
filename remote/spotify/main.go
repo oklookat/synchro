@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/oklookat/synchro/config"
-	"github.com/oklookat/synchro/logger"
 	"github.com/oklookat/synchro/shared"
 	"github.com/zmb3/spotify/v2"
 	spotifyauth "github.com/zmb3/spotify/v2/auth"
@@ -18,8 +18,6 @@ import (
 
 var (
 	_state = "abc123"
-
-	_log *logger.Logger
 
 	// So far, there have been no problems with AU, for example when searching.
 	_market = spotify.Market("AU")
@@ -59,7 +57,10 @@ func Reauth(
 
 func getTokens(ctx context.Context, clientID string, clientSecret string, onURL func(url string)) (string, error) {
 	httpErr := make(chan error)
-	auth := getAuthenticator(clientID, clientSecret)
+	auth, err := getAuthenticator(clientID, clientSecret)
+	if err != nil {
+		return "", err
+	}
 	clientCh := make(chan *spotify.Client)
 
 	go serve(ctx, func(w http.ResponseWriter, r *http.Request) {
@@ -139,10 +140,10 @@ type authorized struct {
 	Token        *oauth2.Token `json:"token"`
 }
 
-func getAuthenticator(clientID, clientSecret string) *spotifyauth.Authenticator {
-	cfg := &config.Spotify{}
-	if err := config.Get(cfg); err != nil {
-		cfg.Default()
+func getAuthenticator(clientID, clientSecret string) (*spotifyauth.Authenticator, error) {
+	cfg, err := config.Get[config.Spotify](config.KeySpotify)
+	if err != nil {
+		return nil, err
 	}
 
 	fullUrl := cfg.Host + ":" + strconv.Itoa(int(cfg.Port))
@@ -163,14 +164,13 @@ func getAuthenticator(clientID, clientSecret string) *spotifyauth.Authenticator 
 			spotifyauth.ScopePlaylistModifyPrivate,
 			spotifyauth.ScopePlaylistModifyPublic,
 		),
-	)
+	), err
 }
 
 func serve(ctx context.Context, what http.HandlerFunc) (err error) {
-	cfg := &config.Spotify{}
-	if err := config.Get(cfg); err != nil {
-		cfg.Default()
-		err = nil
+	cfg, err := config.Get[config.Spotify](config.KeySpotify)
+	if err != nil {
+		return err
 	}
 
 	mux := http.NewServeMux()
@@ -184,15 +184,15 @@ func serve(ctx context.Context, what http.HandlerFunc) (err error) {
 
 	go func() {
 		if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			_log.Error("server listen: " + err.Error())
+			slog.Error("server listen: " + err.Error())
 		}
 	}()
 
-	_log.Debug("server started")
+	slog.Debug("server started")
 
 	<-ctx.Done()
 
-	_log.Debug("server stopped")
+	slog.Debug("server stopped")
 
 	ctxShutDown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer func() {
@@ -201,7 +201,7 @@ func serve(ctx context.Context, what http.HandlerFunc) (err error) {
 
 	if err = srv.Shutdown(ctxShutDown); err != nil {
 		if !(errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
-			_log.Error("shutdown: " + err.Error())
+			slog.Error("shutdown: " + err.Error())
 		}
 	}
 
@@ -217,7 +217,10 @@ func getClient(account shared.Account) (*spotify.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	au := getAuthenticator(token.ClientID, token.ClientSecret)
+	au, err := getAuthenticator(token.ClientID, token.ClientSecret)
+	if err != nil {
+		return nil, err
+	}
 	client := spotify.New(au.Client(context.Background(), token.Token))
 	return client, err
 }

@@ -17,3 +17,7 @@ dist/*
 # vendor/
 
 .env
+
+*.sqlite
+config.json
+*.log
