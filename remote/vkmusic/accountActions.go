@@ -47,7 +47,7 @@ type LikedAlbumsActions struct {
 	client *govkm.Client
 }
 
-func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	var albums []schema.Album
 
 	const limit = 30
@@ -65,9 +65,9 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		offset += limit
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	for i := range albums {
-		result[shared.RemoteID(albums[i].APIID)] = newAlbum(albums[i], e.client)
+		result = append(result, newAlbum(albums[i], e.client))
 	}
 
 	return result, nil
@@ -100,7 +100,7 @@ type LikedArtistsActions struct {
 	client *govkm.Client
 }
 
-func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedArtistsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	var artists []schema.Artist
 
 	const limit = 30
@@ -118,9 +118,9 @@ func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]sha
 		offset += limit
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	for i := range artists {
-		result[shared.RemoteID(artists[i].APIID)] = newArtist(artists[i].SimpleArtist, e.client)
+		result = append(result, newArtist(artists[i].SimpleArtist, e.client))
 	}
 
 	return result, nil
@@ -153,7 +153,7 @@ type LikedTracksActions struct {
 	client *govkm.Client
 }
 
-func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedTracksActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	likesPl, err := e.client.LikedTracks(ctx)
 	if err != nil {
 		return nil, err
@@ -181,13 +181,13 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		offset += limit
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	for i := range tracks {
 		track, err := newTrack(tracks[i], e.client)
 		if err != nil {
 			return nil, err
 		}
-		result[shared.RemoteID(tracks[i].APIID)] = track
+		result = append(result, track)
 	}
 
 	return result, nil
@@ -221,7 +221,7 @@ type PlaylistActions struct {
 	client  *govkm.Client
 }
 
-func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]shared.RemotePlaylist, error) {
+func (e *PlaylistActions) MyPlaylists(ctx context.Context) ([]shared.RemotePlaylist, error) {
 	var playlists []schema.Playlist
 
 	const limit = 30
@@ -248,9 +248,9 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 		offset += limit
 	}
 
-	result := map[shared.RemoteID]shared.RemotePlaylist{}
+	result := []shared.RemotePlaylist{}
 	for i := range playlists {
-		result[shared.RemoteID(playlists[i].APIID)] = newPlaylist(e.account, playlists[i], e.client)
+		result = append(result, newPlaylist(e.account, playlists[i], e.client))
 	}
 
 	return result, nil

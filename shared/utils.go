@@ -11,8 +11,9 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"reflect"
-	"sort"
+	"runtime"
 	"strings"
 	"time"
 
@@ -47,48 +48,6 @@ func (r RemoteName) String() string {
 func (r *RemoteName) FromString(val string) {
 	conv := RemoteName(val)
 	*r = conv
-}
-
-type RemoteIDSlice[T comparable] []RemoteID
-
-func (r RemoteIDSlice[T]) Len() int {
-	return len(r)
-}
-
-func (r RemoteIDSlice[T]) Less(i, j int) bool {
-	return r[i] < r[j]
-}
-
-func (r RemoteIDSlice[T]) Swap(i, j int) {
-	r[i], r[j] = r[j], r[i]
-}
-
-func (r *RemoteIDSlice[T]) Reverse() {
-	sort.Sort(sort.Reverse(r))
-}
-
-func (r *RemoteIDSlice[T]) FromMap(data map[RemoteID]T) {
-	if len(data) == 0 {
-		return
-	}
-	*r = make([]RemoteID, len(data))
-	i := 0
-	for id := range data {
-		(*r)[i] = id
-		i++
-	}
-}
-
-func (r *RemoteIDSlice[T]) FromMapV(data map[T]RemoteID) {
-	if len(data) == 0 {
-		return
-	}
-	*r = make([]RemoteID, len(data))
-	i := 0
-	for _, v := range data {
-		(*r)[i] = v
-		i++
-	}
 }
 
 // Compare albums, tracks, artists names.
@@ -482,4 +441,20 @@ func GetEntityURL(base string, etype EntityType, id RemoteID) url.URL {
 		return url.URL{}
 	}
 	return *res
+}
+
+// Supports: Linux, Windows, Darwin.
+func OpenBrowser(url string) error {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("unsupported platform")
+	}
+	return err
 }

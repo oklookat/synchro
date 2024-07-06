@@ -49,19 +49,6 @@ func (e Remote) ID() shared.RepositoryID {
 	return e.HID
 }
 
-func (e Remote) Enabled() bool {
-	return e.HEnabled
-}
-
-func (e *Remote) SetEnabled(val bool) error {
-	const query = "UPDATE remote SET is_enabled=? WHERE name=?"
-	_, err := dbExec(context.Background(), query, val, e.Name())
-	if err == nil {
-		e.HEnabled = val
-	}
-	return err
-}
-
 func (e Remote) Name() shared.RemoteName {
 	return e.HName
 }
@@ -73,18 +60,8 @@ func (e *Remote) CreateAccount(alias string, auth string) (shared.Account, error
 	}
 
 	const query = "INSERT INTO account (id, remote_name, alias, auth, added_at) VALUES (?, ?, ?, ?, ?) RETURNING *"
-	acc, err := dbGetOne[Account](context.Background(), query, genRepositoryID(), e.Name(), alias, auth, shared.TimestampNow())
-	if err != nil {
-		return nil, err
-	}
 
-	// Init settings.
-	_, err = acc.Settings()
-	if err != nil {
-		return nil, err
-	}
-
-	return acc, err
+	return dbGetOne[Account](context.Background(), query, genRepositoryID(), e.Name(), alias, auth, shared.TimestampNow())
 }
 
 func (e *Remote) Accounts(ctx context.Context) ([]shared.Account, error) {

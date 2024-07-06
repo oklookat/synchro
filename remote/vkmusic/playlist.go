@@ -44,7 +44,7 @@ func (e Playlist) Description() *string {
 	return nil
 }
 
-func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.RemoteTrack, error) {
+func (e *Playlist) Tracks(ctx context.Context) ([]shared.RemoteTrack, error) {
 	if err := e.cacheTracks(ctx); err != nil {
 		return nil, err
 	}
@@ -52,13 +52,13 @@ func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.Remot
 		return nil, nil
 	}
 
-	result := map[shared.RemoteID]shared.RemoteTrack{}
+	result := []shared.RemoteTrack{}
 	for i := range e.cachedTracks {
 		track, err := newTrack(e.cachedTracks[i], e.client)
 		if err != nil {
 			return nil, err
 		}
-		result[shared.RemoteID(e.cachedTracks[i].APIID)] = track
+		result = append(result, track)
 	}
 
 	return result, nil

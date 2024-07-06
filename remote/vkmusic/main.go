@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/oklookat/govkm"
+	"github.com/oklookat/synchro/config"
 	"github.com/oklookat/synchro/shared"
 	"github.com/oklookat/vkmauth"
 
@@ -67,10 +70,37 @@ func getClient(account shared.Account) (*govkm.Client, error) {
 	if err := json.Unmarshal([]byte(account.Auth()), token); err != nil {
 		return nil, err
 	}
+	hClient, err := getHttpProxyClient()
+	if err != nil {
+		return nil, err
+	}
+	// TODO: тут и еще много где надо сразу клиент передавать. И еще надо отказаться от vantuz
+	// еще можно конфиги для стримингов создавать автоматически, и получать конфиги прокси для них тоже
+	// т.е инстанс конфига можно привязать к Remote, типа как репозиторий к нему привязывается
 	cl, err := govkm.New(token.AccessToken)
 	if err != nil {
 		return nil, err
 	}
+	cl.Http.SetClient(hClient)
 	cl.Http.SetRateLimit(2, time.Second)
 	return cl, err
+}
+
+func getHttpProxyClient() (*http.Client, error) {
+	cfg, err := config.Get[*config.VKMusic](config.KeyVKMusic)
+	if err != nil {
+		return nil, err
+	}
+
+	// Proxy?
+	hClient := &http.Client{}
+	if (*cfg).Proxy.Proxy {
+		pUrl, err := url.Parse((*cfg).Proxy.URL)
+		if err != nil {
+			return nil, err
+		}
+		hClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+	}
+
+	return hClient, err
 }

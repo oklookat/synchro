@@ -38,7 +38,7 @@ type Playlist struct {
 	account  shared.Account
 	playlist schema.Playlist
 
-	cachedTracks map[shared.RemoteID]shared.RemoteTrack
+	cachedTracks []shared.RemoteTrack
 }
 
 func (e Playlist) FromAccount() shared.Account {
@@ -49,7 +49,7 @@ func (e Playlist) Description() *string {
 	return &e.playlist.Description
 }
 
-func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.RemoteTrack, error) {
+func (e *Playlist) Tracks(ctx context.Context) ([]shared.RemoteTrack, error) {
 	if err := e.cacheTracks(ctx); err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (e *Playlist) cacheTracks(ctx context.Context) error {
 	const limit = 30
 	offset := 0
 
-	e.cachedTracks = map[shared.RemoteID]shared.RemoteTrack{}
+	e.cachedTracks = []shared.RemoteTrack{}
 
 	for {
 		resp, err := e.client.PlaylistTracks(ctx, e.playlist.ID, offset, limit)
@@ -143,8 +143,7 @@ func (e *Playlist) cacheTracks(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			e.cachedTracks[shared.RemoteID(item.ID.String())] = conv
-
+			e.cachedTracks = append(e.cachedTracks, conv)
 		}
 
 		if len(resp.Data) == 0 || resp.Next == nil || len(*resp.Next) == 0 {

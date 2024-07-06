@@ -2,6 +2,8 @@ package deezer
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 
 	"github.com/oklookat/deezus"
 	"github.com/oklookat/deezus/deezerauth"
@@ -67,7 +69,7 @@ func getToken(ctx context.Context, appID, appSecret string, onURL func(url strin
 }
 
 func getArgs(appID, appSecret string, onURL func(url string)) (deezerauth.AuthArgs, error) {
-	cfg, err := config.Get[config.Deezer](config.KeyDeezer)
+	cfg, err := config.Get[*config.Deezer](config.KeyDeezer)
 	if err != nil {
 		return deezerauth.AuthArgs{}, err
 	}
@@ -85,17 +87,49 @@ func getArgs(appID, appSecret string, onURL func(url string)) (deezerauth.AuthAr
 		State:       _state,
 		AppID:       appID,
 		Secret:      appSecret,
-		RedirectUri: cfg.Host,
-		Port:        cfg.Port,
+		RedirectUri: (*cfg).Host,
+		Port:        (*cfg).Port,
 		Perms:       perms,
 		OnURL:       onURL,
 	}, err
 }
 
 func getClient(account shared.Account) (*deezus.Client, error) {
+	hClient, err := getHttpProxyClient()
+	if err != nil {
+		return nil, err
+	}
+
 	token, err := shared.AuthToToken(account.Auth())
 	if err != nil {
 		return nil, err
 	}
-	return deezus.New(token.AccessToken)
+
+	cl, err := deezus.New(token.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	cl.Http.SetClient(hClient)
+
+	return cl, err
+}
+
+func getHttpProxyClient() (*http.Client, error) {
+	cfg, err := config.Get[*config.Deezer](config.KeyDeezer)
+	if err != nil {
+		return nil, err
+	}
+
+	// Proxy?
+	hClient := &http.Client{}
+	if (*cfg).Proxy.Proxy {
+		pUrl, err := url.Parse((*cfg).Proxy.URL)
+		if err != nil {
+			return nil, err
+		}
+		hClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+	}
+
+	return hClient, err
 }

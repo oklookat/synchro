@@ -23,7 +23,7 @@ type Playlist struct {
 
 	playlist   schema.Playlist
 	client     *goym.Client
-	trackItems map[schema.ID]schema.TrackItem
+	trackItems []schema.TrackItem
 }
 
 func (e Playlist) FromAccount() shared.Account {
@@ -34,7 +34,7 @@ func (e Playlist) Description() *string {
 	return &e.playlist.Description
 }
 
-func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.RemoteTrack, error) {
+func (e *Playlist) Tracks(ctx context.Context) ([]shared.RemoteTrack, error) {
 	if err := e.cacheTracks(ctx); err != nil {
 		return nil, err
 	}
@@ -43,14 +43,14 @@ func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.Remot
 		return nil, nil
 	}
 
-	result := map[shared.RemoteID]shared.RemoteTrack{}
+	result := []shared.RemoteTrack{}
 
-	for id, item := range e.trackItems {
+	for _, item := range e.trackItems {
 		track, err := newTrack(item.Track, e.client)
 		if err != nil {
 			return nil, err
 		}
-		result[shared.RemoteID(id.String())] = track
+		result = append(result, track)
 	}
 
 	return result, nil
@@ -163,10 +163,8 @@ func (e *Playlist) cacheTracks(ctx context.Context) error {
 		return err
 	}
 
-	e.trackItems = map[schema.ID]schema.TrackItem{}
-	for _, item := range pl.Result.Tracks {
-		e.trackItems[item.ID] = item
-	}
+	e.trackItems = []schema.TrackItem{}
+	e.trackItems = append(e.trackItems, pl.Result.Tracks...)
 
 	return err
 }

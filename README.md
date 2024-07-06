@@ -2,54 +2,14 @@
 
 Music streaming services utilities.
 
-Not ready for release yet.
+You can transfer music between services, delete liked tracks, and so on.
 
-## Features
+I did this project primarily for myself. I wanted to make different UIs, applications, and so on. The ultimate goal was to create something like a unified streaming account, so that no matter what streaming service you were on, everything would be easily transferred and synchronized.
 
-- [x] Liked albums sync
-- [x] Liked artists sync
-- [x] Liked tracks sync
-- [x] Playlists sync
-- [x] Transfer liked albums
-- [x] Transfer liked artists
-- [x] Transfer liked tracks
-- [x] Unlike all albums.
-- [x] Unlike all artists.
-- [x] Unlike all tracks.
-- [x] Delete all playlists.
-- [x] Snapshots.
-- [x] Transfer snapshots between streamings.
+Despite the ambition, I've now settled on CLI, and simpler things, this hell development is getting tiresome.
 
-## Services
+The main problem is the API of streaming services. There are only two official APIs (Spotify, Deezer), but they work terribly. Spotify often gives errors like 403 despite VPN, and Deezer API is just disabled for everyone, for some reason. The rest of the APIs are made artisanally through tracking HTTP requests.
 
-- [x] [Spotify](https://spotify.com)
-- [x] [Zvuk](https://zvuk.com)
-- [x] [Yandex.Music](https://music.yandex.ru)
-- [x] [VK Music](https://music.vk.com)
-- [x] [Deezer](https://deezer.com)
-- [ ] [YouTube Music](https://music.youtube.com)
-- [ ] [Apple Music](https://music.apple.com)
-- [ ] [Amazon Music](https://music.amazon.com)
-- [ ] [Soundcloud](https://soundcloud.com)
-- [ ] [Tidal](https://tidal.com)
+If you decide to make similar project, please pay attention to two packages: [linker](./linking/linker/) and [linkerimpl](./linking/linkerimpl/). These packages match entities on different streaming services, and do it better than any other services (like TuneMyMusic, Soundiiz, and so on), in my opinion. I recommend you to take note.
 
-## Build
-
-synchro is a library. If you want to get something like the program,
-you need to compile this project and then use it in your frontend.
-
-See [BUILD.md](./build/README.md).
-
-## Frontends
-
-### Android
-
-- 
-
-### iOS
-
-- nope
-
-### Windows, Linux, macOS
-
-- (maybe someday)
+This project is either frozen or will be updated, occasionally.

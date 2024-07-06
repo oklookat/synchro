@@ -49,7 +49,7 @@ type LikedAlbumsActions struct {
 	client *gozvuk.Client
 }
 
-func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	col, err := e.client.UserCollection(ctx)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		albumIds = append(albumIds, *ci.ID)
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	// 30 items per request.
 	idsChunked := shared.ChunkSlice(albumIds, 30)
 	for i := range idsChunked {
@@ -77,7 +77,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			if len(id) == 0 {
 				continue
 			}
-			result[shared.RemoteID(id)] = newAlbum(albumd.Data.GetReleases[x], e.client)
+			result = append(result, newAlbum(albumd.Data.GetReleases[x], e.client))
 		}
 	}
 
@@ -100,7 +100,7 @@ type LikedArtistsActions struct {
 	client *gozvuk.Client
 }
 
-func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedArtistsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	collResp, err := e.client.UserCollection(ctx)
 	if err != nil {
 		return nil, err
@@ -124,12 +124,12 @@ func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]sha
 		artists = append(artists, artResp.Data.GetArtists...)
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	for i := range artists {
 		if len(artists[i].ID) == 0 {
 			continue
 		}
-		result[shared.RemoteID(artists[i].ID.String())] = newArtist(&artists[i].SimpleArtist, e.client)
+		result = append(result, newArtist(&artists[i].SimpleArtist, e.client))
 	}
 	return result, err
 }
@@ -150,7 +150,7 @@ type LikedTracksActions struct {
 	client *gozvuk.Client
 }
 
-func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedTracksActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	resp, err := e.client.UserTracks(ctx, schema.OrderByDateAdded, schema.OrderDirectionAsc)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		trackIds = append(trackIds, v.ID)
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 
 	// 30 items per request.
 	idsChunked := shared.ChunkSlice(trackIds, 10)
@@ -179,7 +179,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 				// Track not found? Zvuk sometimes gives not exists tracks. Idk why.
 				continue
 			}
-			result[shared.RemoteID(trackd.Data.GetTracks[x].ID.String())] = newTrack(trackd.Data.GetTracks[x], e.client)
+			result = append(result, newTrack(trackd.Data.GetTracks[x], e.client))
 		}
 	}
 
@@ -228,10 +228,10 @@ type PlaylistActions struct {
 	profileID   string
 	account     shared.Account
 	client      *gozvuk.Client
-	myPlaylists map[shared.RemoteID]shared.RemotePlaylist
+	myPlaylists []shared.RemotePlaylist
 }
 
-func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]shared.RemotePlaylist, error) {
+func (e *PlaylistActions) MyPlaylists(ctx context.Context) ([]shared.RemotePlaylist, error) {
 	if len(e.myPlaylists) > 0 {
 		return e.myPlaylists, nil
 	}
@@ -257,7 +257,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 		myPlaylistsIds = append(myPlaylistsIds, *item.ID)
 	}
 
-	result := map[shared.RemoteID]shared.RemotePlaylist{}
+	result := []shared.RemotePlaylist{}
 	chunksIds := shared.ChunkSlice(myPlaylistsIds, 10)
 	for _, chunk := range chunksIds {
 		playlists, err := e.client.GetPlaylists(ctx, chunk)
@@ -270,7 +270,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 			if len(id) == 0 {
 				continue
 			}
-			result[shared.RemoteID(id)] = newPlaylist(e.account, playlistsSlice[i], e.client)
+			result = append(result, newPlaylist(e.account, playlistsSlice[i], e.client))
 		}
 	}
 

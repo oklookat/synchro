@@ -22,7 +22,7 @@ type Playlist struct {
 	account shared.Account
 
 	playlist     spotify.SimplePlaylist
-	cachedTracks map[spotify.ID]spotify.FullTrack
+	cachedTracks []spotify.FullTrack
 
 	snapshotID string
 	client     *spotify.Client
@@ -36,7 +36,7 @@ func (e Playlist) Description() *string {
 	return &e.playlist.Description
 }
 
-func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.RemoteTrack, error) {
+func (e *Playlist) Tracks(ctx context.Context) ([]shared.RemoteTrack, error) {
 	if err := e.cacheTracks(ctx); err != nil {
 		return nil, err
 	}
@@ -44,10 +44,10 @@ func (e *Playlist) Tracks(ctx context.Context) (map[shared.RemoteID]shared.Remot
 		return nil, nil
 	}
 
-	result := map[shared.RemoteID]shared.RemoteTrack{}
-	for id, track := range e.cachedTracks {
+	result := []shared.RemoteTrack{}
+	for _, track := range e.cachedTracks {
 		trackd := track
-		result[shared.RemoteID(id.String())] = newTrack(trackd, e.client)
+		result = append(result, newTrack(trackd, e.client))
 	}
 
 	return result, nil
@@ -120,7 +120,7 @@ func (e *Playlist) cacheTracks(ctx context.Context) error {
 	const limit = 45
 	offset := 0
 
-	e.cachedTracks = map[spotify.ID]spotify.FullTrack{}
+	e.cachedTracks = []spotify.FullTrack{}
 
 	for {
 		page, err := e.client.GetPlaylistItems(ctx, e.playlist.ID, spotify.Limit(limit), spotify.Offset(offset))
@@ -138,9 +138,7 @@ func (e *Playlist) cacheTracks(ctx context.Context) error {
 			if item.Track.Track.Type != "track" {
 				continue
 			}
-			track := *item.Track.Track
-			e.cachedTracks[track.ID] = *item.Track.Track
-
+			e.cachedTracks = append(e.cachedTracks, *item.Track.Track)
 		}
 
 		if len(page.Next) == 0 {

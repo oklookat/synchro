@@ -107,7 +107,7 @@ type (
 		Description() *string
 
 		// Playlist tracks.
-		Tracks(context.Context) (map[RemoteID]RemoteTrack, error)
+		Tracks(context.Context) ([]RemoteTrack, error)
 
 		// Rename playlist.
 		Rename(context.Context, string) error
@@ -167,7 +167,7 @@ type (
 	// Example: artist, track, album.
 	LikedActions interface {
 		// Examples: get liked artists.
-		Liked(context.Context) (map[RemoteID]RemoteEntity, error)
+		Liked(context.Context) ([]RemoteEntity, error)
 
 		// Examples: like artists.
 		Like(ctx context.Context, ids []RemoteID) error
@@ -179,7 +179,7 @@ type (
 	// Playlist actions.
 	PlaylistActions interface {
 		// Get user playlists.
-		MyPlaylists(context.Context) (map[RemoteID]RemotePlaylist, error)
+		MyPlaylists(context.Context) ([]RemotePlaylist, error)
 
 		// Create playlist.
 		Create(ctx context.Context, name string, isVisible bool, description *string) (RemotePlaylist, error)

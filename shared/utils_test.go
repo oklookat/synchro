@@ -2,7 +2,6 @@ package shared
 
 import (
 	"net/url"
-	"reflect"
 	"testing"
 )
 
@@ -14,19 +13,6 @@ func TestCompareImages(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	t.Logf("same covers: %v", result)
-}
-
-func TestRemoteIDSlice(t *testing.T) {
-	input := RemoteIDSlice[string]{"a", "b", "c", "d"}
-	expected := RemoteIDSlice[string]{"d", "c", "b", "a"}
-
-	reversed := make(RemoteIDSlice[string], len(input))
-	copy(reversed, input)
-	reversed.Reverse()
-
-	if !reflect.DeepEqual(reversed, expected) {
-		t.Errorf("RemoteIDSlice(%v) = %v; expected %v", input, reversed, expected)
-	}
 }
 
 func TestSameNameSlices(t *testing.T) {

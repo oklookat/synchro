@@ -4,13 +4,17 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"time"
+
+	"github.com/lmittmann/tint"
+	slogmulti "github.com/samber/slog-multi"
 )
 
 func Boot(
+	logPath string,
 	debug bool,
 ) error {
 	const (
-		logPath      = "log.log"
 		maxSizeBytes = 1000000
 	)
 
@@ -19,12 +23,19 @@ func Boot(
 		return err
 	}
 
-	opts := &slog.HandlerOptions{}
+	optsText := &slog.HandlerOptions{}
+	optsTint := &tint.Options{
+		TimeFormat: time.TimeOnly,
+	}
 	if debug {
-		opts.Level = slog.LevelDebug
+		optsText.Level = slog.LevelDebug
+		optsTint.Level = slog.LevelDebug
 	}
 
-	logger := slog.New(slog.NewTextHandler(writer, opts))
+	logger := slog.New(slogmulti.Fanout(
+		tint.NewHandler(os.Stderr, optsTint),
+		slog.NewTextHandler(writer, optsText),
+	))
 
 	slog.SetDefault(logger)
 	return err
@@ -58,7 +69,7 @@ type logWriter struct {
 }
 
 func (l *logWriter) Write(p []byte) (n int, err error) {
-	os.Stdout.Write(p)
+	//os.Stdout.Write(p)
 
 	l.logMutex.Lock()
 	if (l.fileSize + int64(len(p))) > l.maxLogSizeBytes {

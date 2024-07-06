@@ -18,8 +18,6 @@ type Account struct {
 	HAuth       string              `db:"auth"`
 	HAlias      string              `db:"alias"`
 	HAddedAt    int64               `db:"added_at"`
-	//
-	theSettings *AccountSettings `db:"-" json:"-"`
 }
 
 func (e Account) ID() shared.RepositoryID {
@@ -54,17 +52,6 @@ func (e *Account) SetAuth(auth string) error {
 		e.HAuth = auth
 	}
 	return err
-}
-
-func (e *Account) Settings() (shared.AccountSettings, error) {
-	if e.theSettings == nil {
-		setts, err := newAccountSettings(e.HID)
-		if err != nil {
-			return nil, err
-		}
-		e.theSettings = setts
-	}
-	return e.theSettings, nil
 }
 
 func (e Account) AddedAt() time.Time {

@@ -44,8 +44,8 @@ type LikedAlbumsActions struct {
 	client *deezus.Client
 }
 
-func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	albums := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	albums := []shared.RemoteEntity{}
 
 	offset := 0
 	const limit = 60
@@ -68,7 +68,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			if err != nil {
 				return nil, err
 			}
-			albums[shared.RemoteID(al.ID.String())] = conv
+			albums = append(albums, conv)
 		}
 
 		offset += limit
@@ -93,8 +93,8 @@ type LikedArtistsActions struct {
 	client *deezus.Client
 }
 
-func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedArtistsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	result := []shared.RemoteEntity{}
 
 	const limit = 60
 	offset := 0
@@ -109,7 +109,7 @@ func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]sha
 		}
 
 		for i := range resp.Data {
-			result[shared.RemoteID(resp.Data[i].ID.String())] = newArtist(e.client, resp.Data[i])
+			result = append(result, newArtist(e.client, resp.Data[i]))
 		}
 
 		if len(resp.Data) == 0 || resp.Next == nil || len(*resp.Next) == 0 {
@@ -138,8 +138,8 @@ type LikedTracksActions struct {
 	client *deezus.Client
 }
 
-func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedTracksActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	result := []shared.RemoteEntity{}
 
 	const limit = 60
 	offset := 0
@@ -158,7 +158,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			if err != nil {
 				return nil, err
 			}
-			result[shared.RemoteID(resp.Data[i].ID.String())] = conv
+			result = append(result, conv)
 		}
 
 		if len(resp.Data) == 0 || resp.Next == nil || len(*resp.Next) == 0 {
@@ -188,8 +188,8 @@ type PlaylistActions struct {
 	client  *deezus.Client
 }
 
-func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]shared.RemotePlaylist, error) {
-	result := map[shared.RemoteID]shared.RemotePlaylist{}
+func (e *PlaylistActions) MyPlaylists(ctx context.Context) ([]shared.RemotePlaylist, error) {
+	result := []shared.RemotePlaylist{}
 
 	const limit = 60
 	offset := 0
@@ -214,7 +214,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 			if err != nil {
 				return nil, err
 			}
-			result[shared.RemoteID(resp.Data[i].ID.String())] = conv
+			result = append(result, conv)
 		}
 
 		if len(resp.Data) == 0 || resp.Next == nil || len(*resp.Next) == 0 {

@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/url"
 	"os"
 
-	"github.com/oklookat/goym"
-	"github.com/oklookat/yandexauth/v2"
 	"golang.org/x/oauth2"
 
+	"github.com/oklookat/goym"
+	"github.com/oklookat/synchro/config"
 	"github.com/oklookat/synchro/shared"
+	"github.com/oklookat/yandexauth/v3"
 )
 
 var (
@@ -33,16 +36,20 @@ func NewAccount(
 	if err != nil || len(hostname) == 0 || hostname == "localhost" {
 		hostname = "synchro " + shared.GenerateWord()
 	}
-	deviceID := shared.GenerateULID()
 
-	tokens, err := getTokens(ctx, deviceID, hostname, onUrlCode)
+	cfg, err := config.Get[*config.YandexMusic](config.KeyYandexMusic)
+	if err != nil {
+		return nil, err
+	}
+
+	tokens, err := getTokens(ctx, (*cfg).DeviceID, hostname, onUrlCode)
 	if err != nil {
 		return nil, err
 	}
 
 	var tokFinal theToken
 	tokFinal.Token = tokens
-	tokFinal.DeviceID = deviceID
+	tokFinal.DeviceID = (*cfg).DeviceID
 	tokFinal.Hostname = hostname
 
 	jBytes, err := json.Marshal(&tokFinal)
@@ -89,7 +96,11 @@ func getTokens(
 	deviceID, hostname string,
 	onUrlCode func(url, code string),
 ) (*oauth2.Token, error) {
-	return yandexauth.New(ctx, _clientID, _clientSecret, deviceID, hostname, onUrlCode)
+	hClient, err := getHttpProxyClient()
+	if err != nil {
+		return nil, err
+	}
+	return yandexauth.New(ctx, hClient, _clientID, _clientSecret, deviceID, hostname, onUrlCode)
 }
 
 type theToken struct {
@@ -99,6 +110,11 @@ type theToken struct {
 }
 
 func getClient(account shared.Account) (*goym.Client, error) {
+	hClient, err := getHttpProxyClient()
+	if err != nil {
+		return nil, err
+	}
+
 	tokens, err := shared.AuthToToken(account.Auth())
 	if err != nil {
 		return nil, err
@@ -107,7 +123,7 @@ func getClient(account shared.Account) (*goym.Client, error) {
 	// Refresh if needed.
 	var refreshed *oauth2.Token
 	if !tokens.Valid() {
-		refreshed, err = yandexauth.Refresh(context.Background(), tokens.RefreshToken, _clientID, _clientSecret)
+		refreshed, err = yandexauth.Refresh(context.Background(), hClient, tokens.RefreshToken, _clientID, _clientSecret)
 		if err != nil {
 			return nil, err
 		}
@@ -125,5 +141,29 @@ func getClient(account shared.Account) (*goym.Client, error) {
 	}
 
 	// Create client.
-	return goym.New(tokens.AccessToken)
+	cl, err := goym.New(tokens.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+	cl.Http.SetClient(hClient)
+	return cl, err
+}
+
+func getHttpProxyClient() (*http.Client, error) {
+	cfg, err := config.Get[*config.YandexMusic](config.KeyYandexMusic)
+	if err != nil {
+		return nil, err
+	}
+
+	// Proxy?
+	hClient := &http.Client{}
+	if (*cfg).Proxy.Proxy {
+		pUrl, err := url.Parse((*cfg).Proxy.URL)
+		if err != nil {
+			return nil, err
+		}
+		hClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+	}
+
+	return hClient, err
 }

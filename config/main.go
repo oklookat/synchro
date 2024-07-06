@@ -9,21 +9,25 @@ import (
 type Key string
 
 const (
-	KeyGeneral   Key = "general"
-	KeyLinker    Key = "linker"
-	KeySnapshots Key = "snapshots"
-	KeySpotify   Key = "spotify"
-	KeyDeezer    Key = "deezer"
+	KeyDeezer      Key = "deezer"
+	KeyGeneral     Key = "general"
+	KeyLinker      Key = "linker"
+	KeySpotify     Key = "spotify"
+	KeyVKMusic     Key = "vkMusic"
+	KeyYandexMusic Key = "yandexMusic"
+	KeyZvuk        Key = "zvuk"
 )
 
 var (
 	_cfgFile *os.File
 	_configs = map[Key]Configer{
-		KeyGeneral:   &General{},
-		KeyLinker:    &Linker{},
-		KeySnapshots: &Snapshots{},
-		KeySpotify:   &Spotify{},
-		KeyDeezer:    &Deezer{},
+		KeyDeezer:      &Deezer{},
+		KeyGeneral:     &General{},
+		KeyLinker:      &Linker{},
+		KeySpotify:     &Spotify{},
+		KeyVKMusic:     &VKMusic{},
+		KeyYandexMusic: &YandexMusic{},
+		KeyZvuk:        &Zvuk{},
 	}
 )
 
@@ -32,27 +36,52 @@ const (
 	_filePerm  = 0666
 )
 
-type Configer interface {
-	// Set default values.
-	Default()
-	// Validate.
-	Validate() error
-}
+type (
+	Configer interface {
+		// Set default values.
+		Default()
+		// Validate.
+		Validate() error
+	}
 
-func Boot() error {
+	Proxy struct {
+		Proxy bool `json:"proxy"`
+		// Example: http://proxyIp:proxyPort
+		URL string `json:"url"`
+	}
+
+	BaseRemote struct {
+		Proxy Proxy `json:"proxy"`
+	}
+)
+
+func Boot(cfgPath string) error {
+	// Set defaults.
 	for i := range _configs {
 		_configs[i].Default()
 	}
 
-	cfgFile, err := os.OpenFile("config.json", _fileFlags, _filePerm)
+	cfgFile, err := os.OpenFile(cfgPath, _fileFlags, _filePerm)
 	if err != nil {
 		return err
 	}
 	_cfgFile = cfgFile
+	defer _cfgFile.Close()
 
-	if err := json.NewDecoder(_cfgFile).Decode(&_configs); err != nil {
+	// Read and merge configuration.
+	decoder := json.NewDecoder(_cfgFile)
+	var rawConfigs map[Key]json.RawMessage
+	if err := decoder.Decode(&rawConfigs); err != nil {
 		if err = Save(); err != nil {
 			return err
+		}
+	} else {
+		for key, raw := range rawConfigs {
+			if cfg, exists := _configs[key]; exists {
+				if err := json.Unmarshal(raw, cfg); err != nil {
+					cfg.Default()
+				}
+			}
 		}
 	}
 
@@ -78,9 +107,12 @@ func Save() error {
 func Get[T any](what Key) (*T, error) {
 	cfg, ok := _configs[what]
 	if !ok {
-		return new(T), errors.New("unknown key: " + string(what))
+		return nil, errors.New("unknown key: " + string(what))
 	}
-	cfgTyped, _ := cfg.(T)
+	cfgTyped, ok := cfg.(T)
+	if !ok {
+		return nil, errors.New("config assertion not ok. Wtf")
+	}
 	return &cfgTyped, nil
 }
 

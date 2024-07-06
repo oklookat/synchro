@@ -23,13 +23,13 @@ func NewLinkableEntity(entityName EntityName, remoteName shared.RemoteName) *Lin
 }
 
 func (e LinkableEntity) CreateLink(ctx context.Context, eId shared.EntityID, id *shared.RemoteID) (linker.Linked, error) {
-	query := fmt.Sprintf(`INSERT INTO linked_%s (id, %s_id, remote_name, id_on_remote, modified_at)
-	VALUES (?, ?, ?, ?, ?) RETURNING *;`, e.entityName, e.entityName)
+	query := fmt.Sprintf(`INSERT INTO linked_%s (id, entity_id, remote_name, id_on_remote, modified_at)
+	VALUES (?, ?, ?, ?, ?) RETURNING *;`, e.entityName)
 	return e.getOne(ctx, query, genRepositoryID(), eId, e.remoteName, id, shared.TimestampNow())
 }
 
 func (e LinkableEntity) LinkedEntity(eId shared.EntityID) (linker.Linked, error) {
-	query := fmt.Sprintf("SELECT * FROM linked_%s WHERE %s_id=? AND remote_name=? LIMIT 1", e.entityName, e.entityName)
+	query := fmt.Sprintf("SELECT * FROM linked_%s WHERE entity_id=? AND remote_name=? LIMIT 1", e.entityName)
 	return e.getOne(context.Background(), query, eId, e.remoteName)
 }
 
@@ -39,8 +39,11 @@ func (e LinkableEntity) LinkedRemoteID(id shared.RemoteID) (linker.Linked, error
 }
 
 func (e LinkableEntity) getOne(ctx context.Context, query string, args ...interface{}) (*LinkedEntity, error) {
-	res, err := dbGetOne[LinkedEntity](context.Background(), query, args...)
+	res, err := dbGetOne[LinkedEntity](ctx, query, args...)
 	if err != nil {
+		return nil, err
+	}
+	if shared.IsNil(res) {
 		return nil, err
 	}
 	res.entityName = e.entityName

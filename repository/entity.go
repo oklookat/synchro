@@ -25,7 +25,7 @@ func NewEntityRepository(name EntityName) EntityRepository {
 }
 
 func (e EntityRepository) CreateEntity() (shared.EntityID, error) {
-	query := fmt.Sprintf(`INSERT INTO %s (id) RETURNING *`, e.name)
+	query := fmt.Sprintf(`INSERT INTO %s (id) VALUES (?) RETURNING *`, e.name)
 	ent, err := dbGetOne[Entity](context.Background(), query, genEntityID())
 	if err != nil {
 		return "", err
@@ -37,12 +37,12 @@ func (e EntityRepository) DeleteNotLinked() error {
 	query := fmt.Sprintf(`DELETE FROM %s
 	WHERE NOT EXISTS (
 		SELECT 1 FROM linked_%s
-		WHERE linked_%s.%s_id = %s.id AND linked_%s.id_on_remote IS NOT NULL
+		WHERE linked_%s.entity_id = %s.id AND linked_%s.id_on_remote IS NOT NULL
 	) AND 
 	EXISTS (
 		SELECT 1 FROM linked_%s
-		WHERE linked_%s.%s_id = %s.id AND linked_%s.id_on_remote IS NULL
-	);`, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name)
+		WHERE linked_%s.entity_id = %s.id AND linked_%s.id_on_remote IS NULL
+	);`, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name, e.name)
 	_, err := dbExec(context.Background(), query)
 	return err
 }

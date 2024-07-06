@@ -43,8 +43,8 @@ type LikedAlbumsActions struct {
 	client *spotify.Client
 }
 
-func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	albums := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	albums := []shared.RemoteEntity{}
 	offset := 0
 
 	for {
@@ -54,7 +54,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		}
 
 		for i := range albumsd.Albums {
-			albums[shared.RemoteID(albumsd.Albums[i].ID)] = newAlbum(&albumsd.Albums[i].FullAlbum, e.client)
+			albums = append(albums, newAlbum(&albumsd.Albums[i].FullAlbum, e.client))
 		}
 
 		if len(albums) >= int(albumsd.Total) {
@@ -83,8 +83,8 @@ type LikedArtistsActions struct {
 	client *spotify.Client
 }
 
-func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	artists := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedArtistsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	artists := []shared.RemoteEntity{}
 	var offset string
 
 	for {
@@ -100,7 +100,7 @@ func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]sha
 		}
 
 		for i := range followed.Artists {
-			artists[shared.RemoteID(followed.Artists[i].ID)] = newArtist(followed.Artists[i].SimpleArtist, e.client)
+			artists = append(artists, newArtist(followed.Artists[i].SimpleArtist, e.client))
 		}
 
 		if len(followed.Cursor.After) == 0 {
@@ -129,8 +129,8 @@ type LikedTracksActions struct {
 	client *spotify.Client
 }
 
-func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
-	tracks := map[shared.RemoteID]shared.RemoteEntity{}
+func (e LikedTracksActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
+	tracks := []shared.RemoteEntity{}
 	offset := 0
 
 	for {
@@ -140,7 +140,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		}
 
 		for i := range currentUser.Tracks {
-			tracks[shared.RemoteID(currentUser.Tracks[i].ID)] = newTrack(currentUser.Tracks[i].FullTrack, e.client)
+			tracks = append(tracks, newTrack(currentUser.Tracks[i].FullTrack, e.client))
 		}
 
 		if len(tracks) >= int(currentUser.Total) || len(currentUser.Next) == 0 {
@@ -201,12 +201,12 @@ type PlaylistActions struct {
 	currentUser *spotify.PrivateUser
 }
 
-func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]shared.RemotePlaylist, error) {
+func (e *PlaylistActions) MyPlaylists(ctx context.Context) ([]shared.RemotePlaylist, error) {
 	if err := e.cache(ctx); err != nil {
 		return nil, err
 	}
 
-	result := map[shared.RemoteID]shared.RemotePlaylist{}
+	result := []shared.RemotePlaylist{}
 
 	const limit = 45
 	offset := 0
@@ -227,7 +227,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 			if item.Owner.ID != e.currentUser.ID {
 				continue
 			}
-			result[shared.RemoteID(item.ID)] = newPlaylist(e.account, item, e.client)
+			result = append(result, newPlaylist(e.account, item, e.client))
 		}
 		if len(page.Next) == 0 {
 			break

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -78,7 +79,16 @@ func getTokens(ctx context.Context, clientID string, clientSecret string, onURL 
 			return
 		}
 
-		clientCh <- spotify.New(auth.Client(r.Context(), tok), spotify.WithRetry(true))
+		auClient := auth.Client(r.Context(), tok)
+		if err = setProxyClient(auClient); err != nil {
+			httpErr <- err
+			w.WriteHeader(500)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		clientCh <- spotify.New(auClient, spotify.WithRetry(true))
+		w.WriteHeader(200)
 		w.Write([]byte("Done. Now you can go back to where you came from."))
 		httpErr <- err
 	})
@@ -141,12 +151,12 @@ type authorized struct {
 }
 
 func getAuthenticator(clientID, clientSecret string) (*spotifyauth.Authenticator, error) {
-	cfg, err := config.Get[config.Spotify](config.KeySpotify)
+	cfg, err := config.Get[*config.Spotify](config.KeySpotify)
 	if err != nil {
 		return nil, err
 	}
 
-	fullUrl := cfg.Host + ":" + strconv.Itoa(int(cfg.Port))
+	fullUrl := (*cfg).Host + ":" + strconv.Itoa(int((*cfg).Port))
 	return spotifyauth.New(
 		spotifyauth.WithClientID(clientID),
 		spotifyauth.WithClientSecret(clientSecret),
@@ -168,7 +178,7 @@ func getAuthenticator(clientID, clientSecret string) (*spotifyauth.Authenticator
 }
 
 func serve(ctx context.Context, what http.HandlerFunc) (err error) {
-	cfg, err := config.Get[config.Spotify](config.KeySpotify)
+	cfg, err := config.Get[*config.Spotify](config.KeySpotify)
 	if err != nil {
 		return err
 	}
@@ -176,7 +186,7 @@ func serve(ctx context.Context, what http.HandlerFunc) (err error) {
 	mux := http.NewServeMux()
 	mux.Handle("/", what)
 
-	port := ":" + strconv.Itoa(int(cfg.Port))
+	port := ":" + strconv.Itoa(int((*cfg).Port))
 	srv := &http.Server{
 		Addr:    port,
 		Handler: mux,
@@ -221,6 +231,28 @@ func getClient(account shared.Account) (*spotify.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := spotify.New(au.Client(context.Background(), token.Token))
+	auClient := au.Client(context.Background(), token.Token)
+	if err := setProxyClient(auClient); err != nil {
+		return nil, err
+	}
+	client := spotify.New(auClient)
 	return client, err
+}
+
+func setProxyClient(fromClient *http.Client) error {
+	cfg, err := config.Get[*config.Spotify](config.KeySpotify)
+	if err != nil {
+		return err
+	}
+
+	// Proxy?
+	if (*cfg).Proxy.Proxy {
+		pUrl, err := url.Parse((*cfg).Proxy.URL)
+		if err != nil {
+			return err
+		}
+		fromClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+	}
+
+	return err
 }

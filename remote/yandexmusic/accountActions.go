@@ -47,7 +47,7 @@ type LikedAlbumsActions struct {
 	client *goym.Client
 }
 
-func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	resp, err := e.client.LikedAlbums(ctx)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		ids[i] = resp.Result[i].ID
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 
 	// 30 items per request.
 	idsChunked := shared.ChunkSlice(ids, 30)
@@ -75,7 +75,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			if err != nil {
 				return nil, err
 			}
-			result[shared.RemoteID(alb.Result[x].ID.String())] = albWrap
+			result = append(result, albWrap)
 		}
 	}
 
@@ -98,19 +98,19 @@ type LikedArtistsActions struct {
 	client *goym.Client
 }
 
-func (e LikedArtistsActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedArtistsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	resp, err := e.client.LikedArtists(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 	for i := range resp.Result {
 		art, err := newArtist(resp.Result[i], e.client)
 		if err != nil {
 			return nil, err
 		}
-		result[shared.RemoteID(resp.Result[i].ID.String())] = art
+		result = append(result, art)
 	}
 
 	return result, err
@@ -132,7 +132,7 @@ type LikedTracksActions struct {
 	client *goym.Client
 }
 
-func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shared.RemoteEntity, error) {
+func (e LikedTracksActions) Liked(ctx context.Context) ([]shared.RemoteEntity, error) {
 	resp, err := e.client.LikedTracks(ctx)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 		ids[i] = lib[i].ID
 	}
 
-	result := map[shared.RemoteID]shared.RemoteEntity{}
+	result := []shared.RemoteEntity{}
 
 	// 30 items per request.
 	idsChunked := shared.ChunkSlice(ids, 30)
@@ -164,7 +164,7 @@ func (e LikedTracksActions) Liked(ctx context.Context) (map[shared.RemoteID]shar
 			if err != nil {
 				return nil, err
 			}
-			result[shared.RemoteID(track.Result[x].ID.String())] = trackWrap
+			result = append(result, trackWrap)
 		}
 	}
 
@@ -220,10 +220,10 @@ func likeUnlike(
 type PlaylistActions struct {
 	account     shared.Account
 	client      *goym.Client
-	myPlaylists map[shared.RemoteID]shared.RemotePlaylist
+	myPlaylists []shared.RemotePlaylist
 }
 
-func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]shared.RemotePlaylist, error) {
+func (e *PlaylistActions) MyPlaylists(ctx context.Context) ([]shared.RemotePlaylist, error) {
 	if len(e.myPlaylists) > 0 {
 		return e.myPlaylists, nil
 	}
@@ -233,7 +233,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 		return nil, err
 	}
 
-	result := map[shared.RemoteID]shared.RemotePlaylist{}
+	result := []shared.RemotePlaylist{}
 	for i := range playlists.Result {
 		// Collective playlist?
 		if playlists.Result[i].Collective {
@@ -245,7 +245,7 @@ func (e *PlaylistActions) MyPlaylists(ctx context.Context) (map[shared.RemoteID]
 			continue
 		}
 
-		result[shared.RemoteID(playlists.Result[i].Kind.String())] = newPlaylist(e.account, playlists.Result[i], e.client)
+		result = append(result, newPlaylist(e.account, playlists.Result[i], e.client))
 	}
 
 	e.myPlaylists = result

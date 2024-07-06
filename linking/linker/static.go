@@ -96,7 +96,7 @@ type (
 
 func NewStatic(repo Repository, remotes map[shared.RemoteName]Remote) *Static {
 	slog.
-		Info("lovesYou", "linker.Static", "~~~ WISH ME LUCK! <3 ~~~")
+		Info("lovesYou", "linker (static)", "~~~ WISH ME LUCK! <3 ~~~")
 	return &Static{
 		repo:    repo,
 		remotes: remotes,
@@ -113,7 +113,7 @@ type Static struct {
 
 // From remote entity to linked.
 func (e Static) FromRemote(ctx context.Context, target RemoteEntity) (FromRemoteResult, error) {
-	slog.Info("name", target.Name(), "remoteID", target.ID().String(), "from", target.RemoteName().String())
+	slog.Info("fromRemote", "name", target.Name(), "remoteID", target.ID().String(), "from", target.RemoteName().String())
 
 	result := FromRemoteResult{}
 	result.RemoteEntity = target
@@ -250,12 +250,12 @@ func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.
 
 		// Recheck? Maybe it's not missing now.
 
-		cfg, err := config.Get[config.Linker](config.KeyLinker)
+		cfg, err := config.Get[*config.Linker](config.KeyLinker)
 		if err != nil {
 			return result, err
 		}
 
-		if !cfg.RecheckMissing {
+		if !(*cfg).RecheckMissing {
 			// Recheck disabled in config.
 			return result, err
 		}

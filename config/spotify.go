@@ -6,6 +6,7 @@ import (
 )
 
 type Spotify struct {
+	BaseRemote
 	Host string `json:"host"`
 	Port int    `json:"port"`
 }

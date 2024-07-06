@@ -4,10 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"log/slog"
-	"strconv"
-	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/oklookat/synchro/shared"
@@ -19,25 +16,6 @@ func genRepositoryID() shared.RepositoryID {
 
 func genEntityID() shared.RepositoryID {
 	return genRepositoryID()
-}
-
-func genNewerQuery(tableName string, newerThan time.Time, syncParamName string) string {
-	dated := strconv.FormatInt(shared.TimestampNano(newerThan), 10)
-	return fmt.Sprintf("SELECT * FROM %s WHERE %s_modified_at > %s", tableName, syncParamName, dated)
-}
-
-func genOlderQuery(tableName string, olderThan time.Time, syncParamName string) string {
-	dated := strconv.FormatInt(shared.TimestampNano(olderThan), 10)
-	return fmt.Sprintf("SELECT * FROM %s WHERE %s_modified_at < %s", tableName, syncParamName, dated)
-}
-
-func execSnapshotGetCountQuery(tableName string, snapshotId shared.RepositoryID) (int, error) {
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE snapshot_id = ?", tableName)
-	result, err := dbGetOneSimple[int](context.Background(), query, snapshotId)
-	if err != nil {
-		return 0, err
-	}
-	return *result, err
 }
 
 // Get one item.

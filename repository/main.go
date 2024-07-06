@@ -29,20 +29,11 @@ var (
 	ArtistLinkable = NewEntityRepository(EntityNameArtist)
 	AlbumLinkable  = NewEntityRepository(EntityNameAlbum)
 	TrackLinkable  = NewEntityRepository(EntityNameTrack)
-
-	ArtistSyncable   = NewSyncableEntity(EntityNameArtist)
-	AlbumSyncable    = NewSyncableEntity(EntityNameAlbum)
-	TrackSyncable    = NewSyncableEntity(EntityNameTrack)
-	PlaylistSyncable = NewSyncableEntity(EntityNamePlaylist)
 )
 
 func NewLinkablePlaylist(accountID uint64) *LinkableEntity {
 	return NewLinkableEntity("playlist", shared.RemoteName(strconv.FormatUint(accountID, 10)))
 }
-
-const (
-	_packageName = "repository"
-)
 
 var (
 	//go:embed library.sql
@@ -50,9 +41,7 @@ var (
 	_db         *sqlx.DB
 )
 
-func Boot(remotes map[shared.RemoteName]shared.Remote) error {
-	const dbPath = "data.sqlite"
-
+func Boot(dbPath string, remotes map[shared.RemoteName]shared.Remote) error {
 	_, err := os.OpenFile(dbPath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err

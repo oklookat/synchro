@@ -22,11 +22,12 @@ func NewRemoteEntity(from shared.RemoteEntity) linker.RemoteEntity {
 func checkRemotes() map[shared.RemoteName]shared.Remote {
 	ready := map[shared.RemoteName]shared.Remote{}
 	for name := range _remotes {
-		if !_remotes[name].Repository().Enabled() {
+		acts, err := _remotes[name].Actions()
+		if err != nil {
 			continue
 		}
-		_, err := _remotes[name].Actions()
-		if err != nil {
+		if shared.IsNil(acts) {
+			// Actions not available / no accounts, remote disabled, etc.
 			continue
 		}
 		ready[name] = _remotes[name]

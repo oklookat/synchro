@@ -3,11 +3,14 @@ package zvuk
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/oklookat/gozvuk"
 
+	"github.com/oklookat/synchro/config"
 	"github.com/oklookat/synchro/shared"
 )
 
@@ -41,6 +44,11 @@ func Reauth(ctx context.Context,
 }
 
 func getClient(account shared.Account) (*gozvuk.Client, error) {
+	hClient, err := getHttpProxyClient()
+	if err != nil {
+		return nil, err
+	}
+
 	tok, err := shared.AuthToToken(account.Auth())
 	if err != nil {
 		return nil, err
@@ -48,6 +56,7 @@ func getClient(account shared.Account) (*gozvuk.Client, error) {
 
 	// Create client.
 	client := gozvuk.New(tok.AccessToken)
+	client.Http.SetClient(hClient)
 
 	_, err = client.Profile()
 	if err != nil {
@@ -57,4 +66,23 @@ func getClient(account shared.Account) (*gozvuk.Client, error) {
 	client.Http.SetRateLimit(10, time.Second)
 
 	return client, err
+}
+
+func getHttpProxyClient() (*http.Client, error) {
+	cfg, err := config.Get[*config.Zvuk](config.KeyZvuk)
+	if err != nil {
+		return nil, err
+	}
+
+	// Proxy?
+	hClient := &http.Client{}
+	if (*cfg).Proxy.Proxy {
+		pUrl, err := url.Parse((*cfg).Proxy.URL)
+		if err != nil {
+			return nil, err
+		}
+		hClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+	}
+
+	return hClient, err
 }
