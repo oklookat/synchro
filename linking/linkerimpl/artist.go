@@ -12,14 +12,9 @@ import (
 )
 
 func NewArtists() (*linker.Static, error) {
-	ready := checkRemotes()
-	if len(ready) == 0 {
-		return nil, shared.NewErrNoAvailableRemotes()
-	}
-
 	converted := map[shared.RemoteName]linker.Remote{}
-	for name := range ready {
-		converted[name] = ArtistsRemote{repo: ready[name].Repository()}
+	for name := range _remotes {
+		converted[name] = ArtistsRemote{repo: _remotes[name].Repository()}
 	}
 
 	return linker.NewStatic(repository.ArtistEntity, converted), nil

@@ -112,136 +112,134 @@ type Static struct {
 }
 
 // From remote entity to linked.
-func (e Static) FromRemote(ctx context.Context, target RemoteEntity) (FromRemoteResult, error) {
-	slog.Info("fromRemote", "name", target.Name(), "remoteID", target.ID().String(), "from", target.RemoteName().String())
+func (e Static) FromRemote(ctx context.Context, source RemoteEntity, target shared.RemoteName) (FromRemoteResult, error) {
+	slog.Info("fromRemote", "name", source.Name(), "remoteID", source.ID().String(), "from", source.RemoteName().String())
 
 	result := FromRemoteResult{}
-	result.RemoteEntity = target
+	result.RemoteEntity = source
 
-	targetRemote, ok := e.remotes[target.RemoteName()]
+	sourceRemote, ok := e.remotes[source.RemoteName()]
 	if !ok {
-		return result, shared.NewErrRemoteNotFound(target.RemoteName())
+		return result, shared.NewErrRemoteNotFound(source.RemoteName())
 	}
 
 	// Link exists?
-	linked, err := targetRemote.Linkables().LinkedRemoteID(target.ID())
+	sourceLinked, err := sourceRemote.Linkables().LinkedRemoteID(source.ID())
 	if err != nil {
 		return result, err
 	}
 
 	// Link exists.
-	if !shared.IsNil(linked) {
+	if !shared.IsNil(sourceLinked) {
 		// Missing before?
-		if linked.RemoteID() == nil {
+		if sourceLinked.RemoteID() == nil {
 			// Set ID.
 			slog.Info("SET ID (MISSING BEFORE)")
-			updId := target.ID()
-			if err = linked.SetRemoteID(&updId); err != nil {
+			updId := source.ID()
+			if err = sourceLinked.SetRemoteID(&updId); err != nil {
 				return result, err
 			}
 		}
-		result.Linked = linked
+		result.Linked = sourceLinked
 		return result, err
 	}
 
 	// Link not exits.
 
+	targetRemote, ok := e.remotes[target]
+	if !ok {
+		return result, shared.NewErrRemoteNotFound(target)
+	}
+
 	// Find an entity to link with target.
-	entitiesResult, err := e.findEntitiesToLink(ctx, target)
+	found, foundLinked, err := e.findEntityToLink(ctx, source, target)
 	if err != nil {
 		return result, err
 	}
 
-	// Not linked by all remotes.
-	if entitiesResult.FoundEntity == nil {
-		// Create new entity.
-		entityId, err := e.repo.CreateEntity()
-		if err != nil {
-			return result, err
-		}
-		entitiesResult.FoundEntity = &entityId
+	// Found id?
+	var foundIdTarget *shared.RemoteID
+	if !shared.IsNil(found) {
+		gg := found.ID()
+		foundIdTarget = &gg
 	}
-	entityId := *entitiesResult.FoundEntity
 
-	// Link entity with remotes.
-	for remName, remId := range entitiesResult.TargetRemoteId {
-		// Get remote.
-		remote := e.remotes[remName]
+	var entityLinkTo shared.EntityID
 
-		// Link exists?
-		linked, err := remote.Linkables().LinkedEntity(entityId)
+	// Target not linked?
+	if shared.IsNil(foundLinked) {
+		// Create new entity.
+		entityLinkTo, err = e.repo.CreateEntity()
 		if err != nil {
 			return result, err
 		}
-
-		// Exists.
-		if !shared.IsNil(linked) {
-			// Change ID?
-			//
-			// Example 1: an artist deleted his Spotify profile,
-			// but we have his ID in the database. So the data in the database is out of date,
-			// and we need to mark the artist as missing on Spotify.
-			//
-			// Example 2: for some reason the artist ID has changed.
-			// For example, the artist has 2 Spotify profiles - an old and a new one.
-			// And for some reason the matcher chose the old one instead of the new one.
-			// This means that either the artist deleted his new profile
-			// or the matcher made a mistake(?). I call it "relinking".
-			// It can be not only because of the example above, but also if you
-			// deliberately liked the old profile instead of the new one.
-			// Or because of different catalogs on different streaming services.
-			// I can do something about it, with several links to one ID,
-			// and so on, but it's a waste of time. The artist should have one profile.
-			// Writing a bunch of code because of errors and defects of streaming services is bullshit. KISS.
-
-			isIdNotChanged := ((linked.RemoteID() != nil && remId != nil) &&
-				(*linked.RemoteID() == *remId))
-			if !isIdNotChanged {
-				if err := linked.SetRemoteID(remId); err != nil {
-					return result, err
-				}
-			}
-			continue
-		} else {
-			newLinked, err := remote.Linkables().CreateLink(ctx, entityId, remId)
-			if err != nil {
+		// Link with target.
+		_, err = targetRemote.Linkables().CreateLink(context.Background(), entityLinkTo, foundIdTarget)
+		if err != nil {
+			return result, err
+		}
+	} else {
+		// Target linked.
+		entityLinkTo = foundLinked.EntityID()
+		// Change id?
+		isIdNotChanged := ((foundLinked.RemoteID() != nil && foundIdTarget != nil) &&
+			(*foundLinked.RemoteID() == *foundIdTarget))
+		if !isIdNotChanged {
+			if err := foundLinked.SetRemoteID(foundIdTarget); err != nil {
 				return result, err
 			}
-			linked = newLinked
-		}
-
-		// Add to result if current remote is a target.
-		if remName == target.RemoteName() {
-			result.Linked = linked
 		}
 	}
+
+	// Link with source.
+	srcId := source.ID()
+	sourceLinked, err = sourceRemote.Linkables().CreateLink(context.Background(), entityLinkTo, &srcId)
+	if err != nil {
+		return result, err
+	}
+
+	result.Linked = sourceLinked
 
 	return result, err
 }
 
-// From entity to remote entity.
-func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.RemoteName) (ToRemoteResult, error) {
+// From source linked entity to target linked entity.
+func (e Static) ToRemote(ctx context.Context, sourceLinked Linked, source, target shared.RemoteName) (ToRemoteResult, error) {
 	result := ToRemoteResult{}
 
+	// No remote id?
+	if sourceLinked.RemoteID() == nil {
+		// WTF?
+		return result, errors.New("broken links")
+	}
+
+	// Get remotes.
+	sourceRem, ok := e.remotes[source]
+	if !ok {
+		return result, shared.NewErrRemoteNotFound(target)
+	}
 	targetRem, ok := e.remotes[target]
 	if !ok {
 		return result, shared.NewErrRemoteNotFound(target)
 	}
 
+	// Delete strange links.
 	defer e.repo.DeleteNotLinked()
 
-	// Link exists?
-	linked, err := targetRem.Linkables().LinkedEntity(id)
+	// Source linked with target?
+	targetLinked, err := targetRem.Linkables().LinkedEntity(sourceLinked.EntityID())
 	if err != nil {
 		return result, err
 	}
 
-	// Exists.
-	if !shared.IsNil(linked) {
-		result.Linked = linked
+	linkedWithTarget := !shared.IsNil(targetLinked)
+
+	// Linked.
+	if linkedWithTarget {
+		result.Linked = targetLinked
 
 		// Missing?
-		result.MissingBefore = linked.RemoteID() == nil
+		result.MissingBefore = targetLinked.RemoteID() == nil
 		result.MissingNow = result.MissingBefore
 		if !result.MissingBefore {
 			// Not missing.
@@ -259,167 +257,119 @@ func (e Static) ToRemote(ctx context.Context, id shared.EntityID, target shared.
 			// Recheck disabled in config.
 			return result, err
 		}
+
 	}
 
-	// Entity not linked with target or missing before.
-	// Create/find link.
+	// Not linked with target OR linked, but missing (need to recheck).
 
-	// Find link in another remotes.
-	for name := range e.remotes {
-		// Skip current.
-		if name == target {
-			continue
-		}
+	// Try to get entity from source remote.
+	entityFromSourceRemote, err := sourceRem.RemoteEntity(ctx, *sourceLinked.RemoteID())
+	if err != nil {
+		return result, err
+	}
 
-		// Link exists?
-		linkedFromAnother, err := e.remotes[name].Linkables().LinkedEntity(id)
-		if err != nil {
+	// Not exists?
+	if shared.IsNil(entityFromSourceRemote) {
+		result.MissingNow = true
+		// Probably entity deleted from remote. Mark both as missing.
+		if err = sourceLinked.SetRemoteID(nil); err != nil {
 			return result, err
 		}
-
-		// Not exists?
-		if shared.IsNil(linkedFromAnother) {
-			// Try another.
-			continue
-		}
-
-		// Exists, but missing.
-		if linkedFromAnother.RemoteID() == nil {
-			// Skip.
-			continue
-		}
-
-		// Exists, and not missing. Try to get entity in remote.
-		entityFromAnotherRemote, err := e.remotes[name].RemoteEntity(ctx, *linkedFromAnother.RemoteID())
-		if err != nil {
-			return result, err
-		}
-
-		// Not exists?
-		if shared.IsNil(entityFromAnotherRemote) {
-			// Make missing.
-			if err = linkedFromAnother.SetRemoteID(nil); err != nil {
+		if linkedWithTarget {
+			if err := targetLinked.SetRemoteID(nil); err != nil {
 				return result, err
 			}
-			// Try another.
-			continue
-		}
-
-		// Exists. Search entity from another remote in target.
-		found, err := e.search(ctx, entityFromAnotherRemote, target)
-		if err != nil {
 			return result, err
 		}
-
-		// Not found?
-		if shared.IsNil(found) {
-			// Make/stay missing.
-			result.MissingNow = true
-
-			// Link exists before?
-			if !shared.IsNil(result.Linked) {
-				// Stay missing.
-				return result, err
-			}
-
-			// Link not exists.
-			// Create link, mark as missing.
-			result.NewLink = true
-			linked, err := targetRem.Linkables().CreateLink(ctx, id, nil)
-			result.Linked = linked
-			return result, err
-		}
-
-		// Found. Missing before, but now not.
-		foundID := found.ID()
-		result.MissingNow = false
-
-		// Link exists?
-		if !shared.IsNil(result.Linked) {
-			// Set ID.
-			return result, linked.SetRemoteID(&foundID)
-		}
-
-		// Link not exists. Create.
 		result.NewLink = true
-		linked, err := targetRem.Linkables().CreateLink(ctx, id, &foundID)
+		linked, err := targetRem.Linkables().CreateLink(ctx, sourceLinked.EntityID(), nil)
 		if err != nil {
 			return result, err
 		}
-
 		result.Linked = linked
 		return result, err
 	}
 
-	return result, errors.New("broken links")
-}
-
-type findEntitiesToLinkResult struct {
-	// Target used for fine entities to link.
-	Target RemoteEntity
-
-	// Entity that can be linked with Target.
-	FoundEntity *shared.EntityID
-
-	// 1. Target ID in another remotes that also not linked with FoundEntities.
-	// Includes Target.
-	//
-	// 2. Target ID in another remotes that missing in remote.
-	TargetRemoteId map[shared.RemoteName]*shared.RemoteID
-}
-
-// Find an entities to link with target.
-func (e Static) findEntitiesToLink(ctx context.Context, target RemoteEntity) (findEntitiesToLinkResult, error) {
-	result := findEntitiesToLinkResult{
-		Target:         target,
-		TargetRemoteId: map[shared.RemoteName]*shared.RemoteID{},
-	}
-
-	slog.Info("FIND ENTITY FOR", "from", target.RemoteName().String(), "name", target.Name(), "remoteID", target.ID().String())
-
-	// Add current.
-	targetId := target.ID()
-	result.TargetRemoteId[target.RemoteName()] = &targetId
-
-	for _, remote := range e.remotes {
-		// Skip current.
-		if remote.Name() == target.RemoteName() {
-			continue
-		}
-
-		// Find target.
-		foundTarget, err := e.search(ctx, target, remote.Name())
-		if err != nil {
-			return result, err
-		}
-
-		// Missing?
-		if shared.IsNil(foundTarget) {
-			// Mark as missing.
-			result.TargetRemoteId[remote.Name()] = nil
-			continue
-		}
-
-		// Linked?
-		linked, err := remote.Linkables().LinkedRemoteID(foundTarget.ID())
-		if err != nil {
-			return result, err
-		}
-
-		// Not linked.
-		if shared.IsNil(linked) {
-			foundID := foundTarget.ID()
-			result.TargetRemoteId[remote.Name()] = &foundID
-			continue
-		}
-
-		// Linked. Get entity id.
-		entityId := linked.EntityID()
-		result.FoundEntity = &entityId
+	// Exists in source. Search entity from source remote in target.
+	foundInTarget, err := e.search(ctx, entityFromSourceRemote, target)
+	if err != nil {
 		return result, err
 	}
 
-	return result, nil
+	// Not found in target remote?
+	if shared.IsNil(foundInTarget) {
+		if linkedWithTarget {
+			// Stay missing.
+			return result, err
+		}
+		// Create link, mark as missing.
+		result.NewLink = true
+		linked, err := targetRem.Linkables().CreateLink(ctx, sourceLinked.EntityID(), nil)
+		result.Linked = linked
+		return result, err
+	}
+
+	// Found.
+	foundID := foundInTarget.ID()
+	result.MissingNow = false
+
+	// Link exists?
+	if linkedWithTarget {
+		return result, targetLinked.SetRemoteID(&foundID)
+	}
+
+	// Link not exists. Create.
+	result.NewLink = true
+	targetLinked, err = targetRem.Linkables().CreateLink(ctx, sourceLinked.EntityID(), &foundID)
+	if err != nil {
+		return result, err
+	}
+
+	result.Linked = targetLinked
+	return result, err
+}
+
+// Find an entities to link with target.
+//
+// Returns:
+//
+// 1. Found SOURCE in TARGET, linked TARGET.
+//
+// 2. nil, nil, nil if SOURCE not found in TARGET.
+//
+// 3. ok, nil, nil if SOURCE found in TARGET, but not linked.
+func (e Static) findEntityToLink(ctx context.Context, source RemoteEntity, target shared.RemoteName) (RemoteEntity, Linked, error) {
+	slog.Info("FIND ENTITY FOR", "from", source.RemoteName().String(), "name", source.Name(), "remoteID", source.ID().String())
+
+	// Find target.
+	foundTarget, err := e.search(ctx, source, target)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Missing?
+	if shared.IsNil(foundTarget) {
+		// Missing.
+		return nil, nil, nil
+	}
+
+	// Linked?
+	targetRem, ok := e.remotes[target]
+	if !ok {
+		return nil, nil, shared.NewErrRemoteNotFound(target)
+	}
+	linked, err := targetRem.Linkables().LinkedRemoteID(foundTarget.ID())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Not linked.
+	if shared.IsNil(linked) {
+		return foundTarget, nil, err
+	}
+
+	// All found.
+	return foundTarget, linked, err
 }
 
 // Search any remote entity in any remote.
@@ -429,25 +379,25 @@ func (e Static) findEntitiesToLink(ctx context.Context, target RemoteEntity) (fi
 // Returns remote entity from target.
 //
 // Nil if not exists.
-func (e Static) search(ctx context.Context, who RemoteEntity, target shared.RemoteName) (RemoteEntity, error) {
+func (e Static) search(ctx context.Context, source RemoteEntity, target shared.RemoteName) (RemoteEntity, error) {
 	targetRem, ok := e.remotes[target]
 	if !ok {
 		return nil, shared.NewErrRemoteNotFound(target)
 	}
 
-	slog.Info("==== 🔎 ====", "from", who.RemoteName().String(),
-		"name", who.Name(),
-		"remoteID", who.ID().String(),
+	slog.Info("==== 🔎 ====", "from", source.RemoteName().String(),
+		"name", source.Name(),
+		"remoteID", source.ID().String(),
 		"to", target.String())
 
 	// same remotes.
-	if target == who.RemoteName() {
+	if target == source.RemoteName() {
 		slog.Info("✅ (same remotes)")
-		return who, nil
+		return source, nil
 	}
 
 	// Match.
-	matched, err := targetRem.Match(ctx, who)
+	matched, err := targetRem.Match(ctx, source)
 	if err != nil {
 		return nil, err
 	}

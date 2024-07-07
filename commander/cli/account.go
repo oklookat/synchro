@@ -48,7 +48,7 @@ func (a account) list() *cli.Command {
 					return err
 				}
 				for _, acc := range accs {
-					fmt.Printf("Remote: %s | ID: %s | Alias: %s", acc.RemoteName(), acc.ID(), acc.Alias())
+					fmt.Printf("Remote: %s | ID: %s | Alias: %s\n", acc.RemoteName(), acc.ID(), acc.Alias())
 				}
 			}
 			return nil

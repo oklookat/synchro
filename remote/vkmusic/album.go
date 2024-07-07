@@ -8,7 +8,10 @@ import (
 	"github.com/oklookat/synchro/shared"
 )
 
-func newAlbum(album schema.Album, client *govkm.Client) *Album {
+func newAlbum(album *schema.Album, client *govkm.Client) *Album {
+	if album == nil {
+		return nil
+	}
 	return &Album{
 		Entity: newEntity(album.APIID.String(), album.Name),
 		client: client,
@@ -18,7 +21,7 @@ func newAlbum(album schema.Album, client *govkm.Client) *Album {
 
 type Album struct {
 	*Entity
-	album  schema.Album
+	album  *schema.Album
 	client *govkm.Client
 }
 

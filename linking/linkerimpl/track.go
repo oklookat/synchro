@@ -10,14 +10,9 @@ import (
 )
 
 func NewTracks() (*linker.Static, error) {
-	ready := checkRemotes()
-	if len(ready) == 0 {
-		return nil, shared.NewErrNoAvailableRemotes()
-	}
-
 	converted := map[shared.RemoteName]linker.Remote{}
-	for name := range ready {
-		converted[name] = TracksRemote{repo: ready[name].Repository()}
+	for name := range _remotes {
+		converted[name] = TracksRemote{repo: _remotes[name].Repository()}
 	}
 
 	return linker.NewStatic(repository.TrackEntity, converted), nil

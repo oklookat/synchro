@@ -29,7 +29,7 @@ func (e Actions) Album(ctx context.Context, id shared.RemoteID) (shared.RemoteAl
 	if resp.Data.Album == nil {
 		return nil, nil
 	}
-	return newAlbum(*resp.Data.Album, e.client), err
+	return newAlbum(resp.Data.Album, e.client), err
 }
 
 func (e Actions) Artist(ctx context.Context, id shared.RemoteID) (shared.RemoteArtist, error) {
@@ -89,7 +89,7 @@ func (e AlbumsSearchAction) Search(ctx context.Context, what shared.RemoteAlbum)
 		if i == len(resp.Data.Albums) {
 			break
 		}
-		result[i] = newAlbum(resp.Data.Albums[i], e.client)
+		result[i] = newAlbum(&resp.Data.Albums[i], e.client)
 	}
 
 	return result, err
@@ -139,9 +139,9 @@ func (e TracksSearchAction) Search(ctx context.Context, what shared.RemoteTrack)
 		if i == len(result) {
 			break
 		}
-		if isUgcTrack(resp.Data.Tracks[i]) {
-			continue
-		}
+		// if isUgcTrack(resp.Data.Tracks[i]) {
+		// 	continue
+		// }
 		track, err := newTrack(resp.Data.Tracks[i], e.client)
 		if err != nil {
 			return result, err

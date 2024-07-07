@@ -38,28 +38,28 @@ func (e transfer) command() *cli.Command {
 			&cli.BoolFlag{
 				Name:     "likedAlbums",
 				Aliases:  []string{"lab"},
-				Value:    true,
+				Value:    false,
 				Required: false,
 				Usage:    "Liked albums?",
 			},
 			&cli.BoolFlag{
 				Name:     "likedArtists",
 				Aliases:  []string{"lar"},
-				Value:    true,
+				Value:    false,
 				Required: false,
 				Usage:    "Liked artists?",
 			},
 			&cli.BoolFlag{
 				Name:     "likedTracks",
 				Aliases:  []string{"ltr"},
-				Value:    true,
+				Value:    false,
 				Required: false,
 				Usage:    "Liked tracks?",
 			},
 			&cli.BoolFlag{
 				Name:     "playlists",
 				Aliases:  []string{"pla"},
-				Value:    true,
+				Value:    false,
 				Required: false,
 				Usage:    "Playlists?",
 			},
@@ -214,35 +214,33 @@ func (e transfer) transferBtw(
 
 	fromLinkedList := []linker.Linked{}
 	for _, ent := range liked {
-		linkedRes, err := lnk.FromRemote(ctx, ent)
+		linkedRes, err := lnk.FromRemote(ctx, ent, toAcc.RemoteName())
 		if err != nil {
 			return err
 		}
 		fromLinkedList = append(fromLinkedList, linkedRes.Linked)
 		bar.Add(1)
 	}
+	bar.Exit()
 
 	slog.Info("Why don't we have a cup of tea? 🤔")
 
-	bar.Reset()
-	bar.ChangeMax(len(fromLinkedList))
+	bar = progressbar.Default(int64(len(fromLinkedList)))
 	bar.Describe("Linking (DB -> Remote)")
 
 	toLinkedIds := []shared.RemoteID{}
 	for i, linked := range fromLinkedList {
-		if shared.IsNil(linked) {
-			slog.Warn("Not found", "Name", liked[i].Name(), "ID", liked[i].ID().String())
-			continue
-		}
-		res, err := lnk.ToRemote(ctx, linked.EntityID(), toAcc.RemoteName())
+		res, err := lnk.ToRemote(ctx, linked, fromAcc.RemoteName(), toAcc.RemoteName())
 		if err != nil {
 			return err
 		}
 		if res.MissingNow || shared.IsNil(res.Linked) || res.Linked.RemoteID() == nil {
 			slog.Warn("Not found", "Name", liked[i].Name(), "ID", liked[i].ID().String())
+			bar.Add(1)
 			continue
 		}
 		toLinkedIds = append(toLinkedIds, *res.Linked.RemoteID())
+		bar.Add(1)
 	}
 	bar.Exit()
 	slog.Info("Liking", "entitiesCount", len(toLinkedIds))

@@ -251,7 +251,11 @@ func setProxyClient(fromClient *http.Client) error {
 		if err != nil {
 			return err
 		}
-		fromClient.Transport = &http.Transport{Proxy: http.ProxyURL(pUrl)}
+		trs, ok := fromClient.Transport.(*oauth2.Transport)
+		if !ok {
+			return errors.New("fromClient.Transport.(*oauth2.Transport)")
+		}
+		trs.Base = &http.Transport{Proxy: http.ProxyURL(pUrl)}
 	}
 
 	return err

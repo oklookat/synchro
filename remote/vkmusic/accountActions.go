@@ -67,7 +67,7 @@ func (e LikedAlbumsActions) Liked(ctx context.Context) ([]shared.RemoteEntity, e
 
 	result := []shared.RemoteEntity{}
 	for i := range albums {
-		result = append(result, newAlbum(albums[i], e.client))
+		result = append(result, newAlbum(&albums[i], e.client))
 	}
 
 	return result, nil

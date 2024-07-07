@@ -19,8 +19,30 @@ func (e destruct) command() *cli.Command {
 		Aliases: []string{"d"},
 		Subcommands: []*cli.Command{
 			e.accountThings(),
+			e.dbThings(),
 		},
 		Usage: "Destructive things",
+	}
+}
+
+func (e destruct) dbThings() *cli.Command {
+	return &cli.Command{
+		Name:  "db",
+		Usage: "Destructive database things",
+		Subcommands: []*cli.Command{
+			{
+				Name:    "linker",
+				Aliases: []string{"lnk"},
+				Usage:   "Clear all linker entities",
+				Action: func(ctx *cli.Context) error {
+					if err := repository.DeleteLinks(); err != nil {
+						return err
+					}
+					slog.Info("Done")
+					return nil
+				},
+			},
+		},
 	}
 }
 

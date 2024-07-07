@@ -94,3 +94,15 @@ func (e *LinkedEntity) SetRemoteID(id *shared.RemoteID) error {
 func (e LinkedEntity) ModifiedAt() time.Time {
 	return shared.Time(e.HModifiedAt)
 }
+
+func DeleteLinks() error {
+	ctx := context.Background()
+	entities := []string{"artist", "album", "track", "playlist"}
+	for _, name := range entities {
+		_, err := dbExec(ctx, "DELETE FROM "+name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

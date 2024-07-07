@@ -10,12 +10,16 @@ import (
 )
 
 func newTrack(track schema.Track, client *govkm.Client) (*Track, error) {
-	full, err := client.Album(context.Background(), track.Album.APIID)
-	if err != nil {
-		return nil, err
-	}
-	if full.Data.Album == nil {
-		return nil, errNilAlbum
+	var alb *schema.Album
+	if !isUgcTrack(track) {
+		full, err := client.Album(context.Background(), track.Album.APIID)
+		if err != nil {
+			return nil, err
+		}
+		if full.Data.Album == nil {
+			return nil, errNilAlbum
+		}
+		alb = full.Data.Album
 	}
 
 	return &Track{
@@ -23,8 +27,8 @@ func newTrack(track schema.Track, client *govkm.Client) (*Track, error) {
 		track:  track,
 		client: client,
 
-		cachedAlbum: *full.Data.Album,
-	}, err
+		cachedAlbum: alb,
+	}, nil
 }
 
 type Track struct {
@@ -32,7 +36,7 @@ type Track struct {
 	track  schema.Track
 	client *govkm.Client
 
-	cachedAlbum schema.Album
+	cachedAlbum *schema.Album
 }
 
 func (e Track) ISRC() *string {
@@ -52,6 +56,10 @@ func (e *Track) Artists() []shared.RemoteArtist {
 }
 
 func (e *Track) Album() (shared.RemoteAlbum, error) {
+	if e.cachedAlbum == nil {
+		// Not official track.
+		return nil, shared.ErrNotImplemented
+	}
 	return newAlbum(e.cachedAlbum, e.client), nil
 }
 
@@ -60,6 +68,9 @@ func (e Track) LengthMs() int {
 }
 
 func (e Track) Year() int {
+	if e.cachedAlbum == nil {
+		return -1
+	}
 	return e.cachedAlbum.Year
 }
 

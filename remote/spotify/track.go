@@ -55,6 +55,9 @@ func (e *Track) Album() (shared.RemoteAlbum, error) {
 		return newAlbum(e.cachedAlbum, e.client), nil
 	}
 	full, err := e.client.GetAlbum(context.Background(), e.track.Album.ID)
+	if full == nil {
+		return nil, err
+	}
 	e.cachedAlbum = full
 	return newAlbum(e.cachedAlbum, e.client), err
 }

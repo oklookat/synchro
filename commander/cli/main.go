@@ -10,6 +10,7 @@ func Boot() error {
 	acc := account{}
 	tr := transfer{}
 	dest := destruct{}
+	deb := debug{}
 
 	app := &cli.App{
 		Name:  "synchro",
@@ -18,6 +19,7 @@ func Boot() error {
 			acc.command(),
 			tr.command(),
 			dest.command(),
+			deb.command(),
 		},
 	}
 

@@ -195,21 +195,26 @@ func compareTracks(first, second shared.RemoteTrack) (totalWeight float64, exact
 	// Track names.
 	trackNamesWeight := shared.CompareNames(first.Name(), second.Name()) * 0.2
 
-	// Inclusion of artists on both tracks.
-	var firstArtists, secondArtists []string
-	for _, artist := range first.Artists() {
-		firstArtists = append(firstArtists, artist.Name())
+	var artistsNamesWeight = 0.2
+	// Else - bypass.
+	if len(first.Artists()) > 0 && len(second.Artists()) > 0 {
+		// Inclusion of artists on both tracks.
+		var firstArtists, secondArtists []string
+		for _, artist := range first.Artists() {
+			firstArtists = append(firstArtists, artist.Name())
+		}
+		for _, artist := range second.Artists() {
+			secondArtists = append(secondArtists, artist.Name())
+		}
+		artistsNamesWeight = shared.SameNameSlices(firstArtists, secondArtists) * 0.2
 	}
-	for _, artist := range second.Artists() {
-		secondArtists = append(secondArtists, artist.Name())
-	}
-	artistsNamesWeight := shared.SameNameSlices(firstArtists, secondArtists) * 0.2
 
 	// Albums.
-	albumsWeight := 0.0
+	albumsWeight := 0.2
 	fistAlbum, err1 := first.Album()
 	secondAlbum, err2 := second.Album()
-	if err1 == nil && err2 == nil {
+	// Else - bypass.
+	if !shared.IsNil(fistAlbum) && !shared.IsNil(secondAlbum) && err1 == nil && err2 == nil {
 		result, _ := compareAlbums(fistAlbum, secondAlbum)
 		if result > 1 {
 			result = 1
